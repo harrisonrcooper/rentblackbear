@@ -12,12 +12,17 @@ import { fmtUsd, fmtCompact } from "../budget/lib/money";
 import { genId } from "../budget/lib/calc";
 import { useIsMobile } from "../budget/lib/responsive";
 import { saveBuildStateAction } from "@/actions/build/state";
-import { createTask, listTasks } from "@/actions/build/engine";
+import { createTask, listTasks, updateTask } from "@/actions/build/engine";
 import { mergeBuildState } from "@/lib/build/merge";
 import { visibleState } from "@/lib/build/visible";
+import { tasksFor } from "@/lib/build/tasks";
+import {
+  addMustHave, checklistFor, editMustHave, removeMustHave, roomProgress, toggleMustHave,
+} from "@/lib/build/rooms";
 import CommandPalette from "./CommandPalette";
 import QuickCapture from "./QuickCapture";
 import BackupPanel from "./BackupPanel";
+import DetailDrawer from "./DetailDrawer";
 
 /** Best available human name for a row, used in the undo snackbar. */
 function rowLabel(row) {
@@ -493,59 +498,251 @@ function RoomField({ label, value, onChange, placeholder }) {
   );
 }
 
-function RoomCard({ room, onChange, onDelete }) {
-  const [open, setOpen] = useState(false);
+/** A pill. Tone carries meaning; the outline carries the affordance. */
+function Chip({ tone = "neutral", children }) {
+  const map = {
+    neutral: [COLORS.textMuted, COLORS.borderStrong, COLORS.surface],
+    accent:  [COLORS.accent, COLORS.accent, COLORS.accentSoft],
+    green:   [COLORS.green, COLORS.green, COLORS.greenBg],
+    amber:   [COLORS.amber, COLORS.amber, COLORS.amberBg],
+    red:     [COLORS.red, COLORS.red, COLORS.redBg],
+  };
+  const [fg, bd, bg] = map[tone] || map.neutral;
   return (
-    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 12, marginBottom: 10, overflow: "hidden" }}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT, textAlign: "left" }}
-      >
-        <Icon d={open ? ICON.chevD : ICON.chevR} size={13} color={COLORS.textFaint} />
-        <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {room.name || "Room"}
-        </span>
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: COLORS.textFaint, flexShrink: 0 }}>
-          {[room.level, room.size].filter(Boolean).join(" · ")}
-        </span>
-      </button>
-      {open && (
-        <div style={{ padding: "2px 14px 14px", display: "grid", gap: 12 }}>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input value={room.name} onChange={(e) => onChange({ name: e.target.value })} placeholder="Room name" style={{ ...txt(), flex: 2, fontWeight: 700 }} />
-            <input value={room.level} onChange={(e) => onChange({ level: e.target.value })} placeholder="Level" style={{ ...txt(), flex: 1, minWidth: 0 }} />
-            <input value={room.size} onChange={(e) => onChange({ size: e.target.value })} placeholder="Size" style={{ ...txt(), flex: 1, minWidth: 0 }} />
-          </div>
-          <RoomField label="Must-haves" value={room.must_haves} onChange={(v) => onChange({ must_haves: v })} placeholder="What this room needs…" />
-          <RoomField label="Lighting & electrical" value={room.lighting} onChange={(v) => onChange({ lighting: v })} placeholder="Fixtures, switches, outlets, smart-home…" />
-          <RoomField label="Other notes" value={room.details} onChange={(v) => onChange({ details: v })} placeholder="Anything else for this room…" />
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={onDelete} style={{ ...btn("ghost") }}>
-              <Icon d={ICON.x} size={13} /> Delete room
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 5, border: `1px solid ${bd}`,
+      borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 600,
+      color: fg, background: bg, whiteSpace: "nowrap",
+    }}>
+      {children}
+    </span>
   );
 }
 
-function RoomsSection({ state, addRow, updRow, delRow }) {
+function RoomCard({ room, taskCount, onOpen }) {
+  const p = roomProgress(room);
+  const tone = p.total === 0 ? "neutral" : p.done === p.total ? "green" : p.done > 0 ? "accent" : "neutral";
+
   return (
-    <Card title="Rooms & spaces" sub={`${state.rooms.length} rooms`}>
-      <div style={{ fontSize: 12, color: COLORS.textMuted, padding: "4px 2px 12px", lineHeight: 1.5 }}>
-        Your room program — what the architect designs from. Tap a room to open its full details.
+    <button
+      data-item-id={room.id}
+      onClick={onOpen}
+      style={{
+        textAlign: "left", background: COLORS.surface, border: `1px solid ${COLORS.border}`,
+        borderRadius: 12, padding: 15, cursor: "pointer", fontFamily: FONT,
+        display: "flex", flexDirection: "column", minWidth: 0,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 600, letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {room.name || "Room"}
+          </div>
+          <div style={{ fontSize: 11.5, color: COLORS.textFaint, marginTop: 1 }}>
+            {[room.level, room.size].filter(Boolean).join(" · ") || "—"}
+          </div>
+        </div>
+        {p.total > 0 && <Chip tone={tone}>{p.done} / {p.total}</Chip>}
       </div>
-      {state.rooms.map((r) => (
-        <RoomCard
-          key={r.id}
-          room={r}
-          onChange={(patch) => updRow("rooms", r.id, patch)}
-          onDelete={() => delRow("rooms", r.id)}
+
+      {room.must_haves && (
+        <p style={{
+          fontSize: 12.5, color: COLORS.textMuted, margin: "9px 0 0", lineHeight: 1.5,
+          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+        }}>
+          {room.must_haves}
+        </p>
+      )}
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
+        {taskCount > 0
+          ? <Chip>{taskCount} {taskCount === 1 ? "task" : "tasks"}</Chip>
+          : <span style={{ fontSize: 11.5, color: COLORS.textFaint }}>No tasks yet</span>}
+      </div>
+    </button>
+  );
+}
+
+function RoomsSection({ state, addRow, updRow, delRow, tasks, onAddTask, onToggleTask }) {
+  const [openId, setOpenId] = useState(null);
+  const [tab, setTab] = useState("overview");
+  const [newTask, setNewTask] = useState("");
+  const [newItem, setNewItem] = useState("");
+
+  const room = state.rooms.find((r) => r.id === openId) || null;
+  const roomTasks = useMemo(
+    () => (room ? tasksFor(tasks, "room", room.id) : []),
+    [tasks, room],
+  );
+  const countFor = useCallback((id) => tasksFor(tasks, "room", id).length, [tasks]);
+
+  const patch = (p) => updRow("rooms", room.id, p);
+  const setChecklist = (items) => patch({ must_have_items: items });
+
+  const checklist = room ? checklistFor(room) : [];
+  const p = room ? roomProgress(room) : { done: 0, total: 0, bps: 0 };
+
+  function close() { setOpenId(null); setTab("overview"); setNewTask(""); setNewItem(""); }
+
+  return (
+    <>
+      <SectionHead title="Rooms & Spaces" note={`${state.rooms.length} rooms · what the architect designs from`} />
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(228px, 1fr))", gap: 12 }}>
+        {state.rooms.map((r) => (
+          <RoomCard key={r.id} room={r} taskCount={countFor(r.id)} onOpen={() => setOpenId(r.id)} />
+        ))}
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <AddBtn
+          label="Add room"
+          onClick={() => addRow("rooms", { name: "New room", level: "Main", size: "", must_haves: "", lighting: "", details: "" })}
         />
-      ))}
-      <AddBtn label="Add room" onClick={() => addRow("rooms", { name: "New room", level: "Main", size: "", must_haves: "", lighting: "", details: "" })} />
-    </Card>
+      </div>
+
+      <DetailDrawer
+        open={Boolean(room)}
+        onClose={close}
+        kind={room ? `Room${room.level ? ` · ${room.level}` : ""}` : ""}
+        title={room?.name || ""}
+        activeTab={tab}
+        onTab={setTab}
+        tabs={[
+          { id: "overview", label: "Overview" },
+          { id: "tasks", label: "Tasks", count: roomTasks.length },
+          { id: "notes", label: "Notes" },
+        ]}
+      >
+        {room && tab === "overview" && (
+          <>
+            <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+              <input value={room.name} onChange={(e) => patch({ name: e.target.value })} placeholder="Room name" style={{ ...txt(), flex: 2, fontWeight: 600 }} />
+              <input value={room.level} onChange={(e) => patch({ level: e.target.value })} placeholder="Level" style={{ ...txt(), flex: 1, minWidth: 0 }} />
+              <input value={room.size} onChange={(e) => patch({ size: e.target.value })} placeholder="Size" style={{ ...txt(), flex: 1, minWidth: 0 }} />
+            </div>
+
+            <SectionHead title="Must-haves" note={p.total ? `${p.done} of ${p.total}` : "None yet"} />
+            {p.total > 0 && (
+              <div style={{ height: 3, borderRadius: 2, background: COLORS.surfaceTint, marginBottom: 10, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${p.bps / 100}%`, background: ACCENT, borderRadius: 2 }} />
+              </div>
+            )}
+
+            {checklist.map((item) => (
+              <div key={item.id} style={{ display: "flex", alignItems: "flex-start", gap: 9, padding: "7px 0", borderBottom: `1px solid ${COLORS.border}` }}>
+                <button
+                  onClick={() => setChecklist(toggleMustHave(room, item.id))}
+                  aria-label={item.done ? `Uncheck ${item.text}` : `Check ${item.text}`}
+                  style={{
+                    width: 17, height: 17, marginTop: 1, flexShrink: 0, cursor: "pointer",
+                    borderRadius: 5, border: `1.5px solid ${item.done ? ACCENT : COLORS.borderStrong}`,
+                    background: item.done ? ACCENT : COLORS.surface,
+                    display: "grid", placeItems: "center",
+                  }}
+                >
+                  {item.done && (
+                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  )}
+                </button>
+                <input
+                  value={item.text}
+                  onChange={(e) => setChecklist(editMustHave(room, item.id, e.target.value))}
+                  style={{
+                    flex: 1, border: "none", outline: "none", background: "transparent", fontFamily: FONT,
+                    fontSize: 13, padding: 0, color: item.done ? COLORS.textFaint : COLORS.text,
+                    textDecoration: item.done ? "line-through" : "none",
+                  }}
+                />
+                <DelBtn onClick={() => setChecklist(removeMustHave(room, item.id))} />
+              </div>
+            ))}
+
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (!newItem.trim()) return; setChecklist(addMustHave(room, newItem)); setNewItem(""); }}
+              style={{ marginTop: 10 }}
+            >
+              <input
+                value={newItem}
+                onChange={(e) => setNewItem(e.target.value)}
+                placeholder="Add a must-have…"
+                style={{ ...txt(), fontSize: 13 }}
+              />
+            </form>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 22 }}>
+              <button onClick={() => { delRow("rooms", room.id); close(); }} style={{ ...btn("ghost") }}>
+                <Icon d={ICON.x} size={13} /> Delete room
+              </button>
+            </div>
+          </>
+        )}
+
+        {room && tab === "tasks" && (
+          <>
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (!newTask.trim()) return; onAddTask(room.id, newTask); setNewTask(""); }}
+              style={{ marginBottom: 14 }}
+            >
+              <input
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                placeholder="Add a task for this room…"
+                style={{ ...txt(), fontSize: 13 }}
+              />
+            </form>
+
+            {roomTasks.length === 0 && (
+              <p style={{ fontSize: 13, color: COLORS.textFaint, padding: "8px 0" }}>
+                Nothing to do here yet.
+              </p>
+            )}
+
+            {roomTasks.map((t) => (
+              <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderBottom: `1px solid ${COLORS.border}` }}>
+                <button
+                  onClick={() => onToggleTask(t)}
+                  aria-label={t.status === "done" ? `Reopen ${t.title}` : `Complete ${t.title}`}
+                  style={{
+                    width: 17, height: 17, flexShrink: 0, cursor: "pointer", borderRadius: 5,
+                    border: `1.5px solid ${t.status === "done" ? ACCENT : COLORS.borderStrong}`,
+                    background: t.status === "done" ? ACCENT : COLORS.surface,
+                    display: "grid", placeItems: "center",
+                  }}
+                >
+                  {t.status === "done" && (
+                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  )}
+                </button>
+                <span style={{
+                  flex: 1, fontSize: 13.5, color: t.status === "done" ? COLORS.textFaint : COLORS.text,
+                  textDecoration: t.status === "done" ? "line-through" : "none",
+                }}>
+                  {t.title}
+                </span>
+                {t.status === "blocked" && <Chip tone="amber">Blocked</Chip>}
+              </div>
+            ))}
+          </>
+        )}
+
+        {room && tab === "notes" && (
+          <div style={{ display: "grid", gap: 14 }}>
+            <RoomField label="Lighting & electrical" value={room.lighting} onChange={(v) => patch({ lighting: v })} placeholder="Fixtures, switches, outlets, smart-home…" />
+            <RoomField label="Other notes" value={room.details} onChange={(v) => patch({ details: v })} placeholder="Anything else for this room…" />
+            <RoomField label="Original must-haves text" value={room.must_haves} onChange={(v) => patch({ must_haves: v })} placeholder="What this room needs…" />
+            <p style={{ fontSize: 11.5, color: COLORS.textFaint, lineHeight: 1.5, margin: 0 }}>
+              The checklist on the Overview tab was derived from this text and is now tracked separately.
+              Editing here won&apos;t change the checklist.
+            </p>
+          </div>
+        )}
+      </DetailDrawer>
+    </>
   );
 }
 
@@ -1941,9 +2138,9 @@ function PaletteSection({ state, addRow, updRow, delRow }) {
 
 const MAX_SAVE_ATTEMPTS = 3;
 
-export default function BuildClient({ initialState, initialVersion = 0 }) {
+export default function BuildClient({ initialState, initialVersion = 0, initialSection = "overview" }) {
   const [state, setState] = useState(initialState);
-  const [section, setSection] = useState("overview");
+  const [section, setSection] = useState(initialSection);
   const [, startTransition] = useTransition();
   const [saved, setSaved] = useState(true);
   const [saveError, setSaveError] = useState("");
@@ -2044,14 +2241,6 @@ export default function BuildClient({ initialState, initialVersion = 0 }) {
 
   useEffect(() => { refreshTasks(); }, [refreshTasks]);
 
-  // Sections are URL-addressable so Cmd+K results, and the browser's own back
-  // button, land where they say they will.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const s = params.get("s");
-    if (s && SECTIONS.some((x) => x.id === s)) setSection(s);
-  }, []);
-
   const jumpTo = useCallback((nextSection, itemId) => {
     setSection(nextSection);
     const q = new URLSearchParams({ s: nextSection });
@@ -2076,6 +2265,23 @@ export default function BuildClient({ initialState, initialVersion = 0 }) {
     addRow("references", { url, title, tag: "Inbox", note });
   }, [addRow]);
 
+  // Tasks attached to a room. Optimistic locally, reconciled from the server —
+  // the engine's replay makes a lost write impossible, but a stale list is
+  // still possible if two tabs are open, so we refetch after every write.
+  const addRoomTask = useCallback(async (roomId, title) => {
+    const res = await createTask({ title, entityType: "room", entityId: roomId });
+    if (res.ok) await refreshTasks();
+    else setSaveError(res.message || "Could not add that task.");
+  }, [refreshTasks]);
+
+  const toggleTaskDone = useCallback(async (task) => {
+    const next = task.status === "done" ? "todo" : "done";
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: next } : t)));
+    const res = await updateTask(task.id, { status: next });
+    if (!res.ok) setSaveError(res.message || "Could not update that task.");
+    await refreshTasks();
+  }, [refreshTasks]);
+
   // Sections render the live rows only; helpers still mutate the full state.
   const shown = useMemo(() => visibleState(state), [state]);
   const helpers = { state: shown, setField, addRow, updRow, delRow };
@@ -2085,7 +2291,9 @@ export default function BuildClient({ initialState, initialVersion = 0 }) {
       case "references": return <ReferencesSection {...helpers} />;
       case "palette": return <PaletteSection {...helpers} />;
       case "wants": return <WantsSection {...helpers} />;
-      case "rooms": return <RoomsSection {...helpers} />;
+      case "rooms": return (
+        <RoomsSection {...helpers} tasks={tasks} onAddTask={addRoomTask} onToggleTask={toggleTaskDone} />
+      );
       case "costs": return <CostsSection {...helpers} />;
       case "changeorders": return <ChangeOrdersSection {...helpers} />;
       case "payments": return <PaymentsSection {...helpers} />;
@@ -2107,7 +2315,9 @@ export default function BuildClient({ initialState, initialVersion = 0 }) {
         </>
       );
     }
-  }, [section, shown, captureTask, captureReference]); // eslint-disable-line react-hooks/exhaustive-deps
+    // `tasks` matters: without it the rooms drawer renders a task list that
+    // never updates after an add or a toggle.
+  }, [section, shown, tasks, captureTask, captureReference, addRoomTask, toggleTaskDone]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div data-bb-theme="quarry" style={{ display: "flex", minHeight: "100vh", background: COLORS.bg, fontFamily: FONT }}>

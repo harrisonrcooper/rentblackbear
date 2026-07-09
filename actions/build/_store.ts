@@ -24,12 +24,23 @@ export interface Archivable {
   archived?: boolean;
 }
 
+export interface BuildMustHave {
+  id: string;
+  text: string;
+  done: boolean;
+}
 export interface BuildRoom extends Archivable {
   id: string;
   name: string;
   level: string;       // Main / Upstairs / Basement …
   size: string;        // free text, e.g. "16 × 16"
-  must_haves: string;  // the architect-facing requirements
+  must_haves: string;  // the architect-facing requirements, as originally written
+  /**
+   * The checkable form of `must_haves`. Absent until the first tick, at which
+   * point it becomes authoritative — see lib/build/rooms.ts. `must_haves` is
+   * never rewritten, so the original text survives whatever happens here.
+   */
+  must_have_items?: BuildMustHave[];
   lighting: string;    // lighting & electrical plan notes
   details: string;     // any other notes for the room
 }

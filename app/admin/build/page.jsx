@@ -8,14 +8,20 @@ import { notFound } from "next/navigation";
 
 import { fetchBuildState } from "@/actions/build/state";
 import { isAuthorizedForBudget } from "@/actions/budget/_households";
+import { isSectionId } from "@/lib/build/sections";
 import BuildClient from "./BuildClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function BuildPage() {
+export default async function BuildPage({ searchParams }) {
   const { userId } = await auth();
   if (!userId) notFound();
   if (!isAuthorizedForBudget(userId)) notFound();
+
+  // Deep links (?s=rooms&item=r0) resolve on the server, so a shared link
+  // renders its section directly instead of flashing the dashboard first.
+  const requested = typeof searchParams?.s === "string" ? searchParams.s : "";
+  const initialSection = isSectionId(requested) ? requested : "overview";
 
   const result = await fetchBuildState();
   if (!result.ok) {
@@ -33,5 +39,12 @@ export default async function BuildPage() {
     );
   }
 
-  return <BuildClient initialState={result.state} initialVersion={result.version} userId={userId} />;
+  return (
+    <BuildClient
+      initialState={result.state}
+      initialVersion={result.version}
+      initialSection={initialSection}
+      userId={userId}
+    />
+  );
 }
