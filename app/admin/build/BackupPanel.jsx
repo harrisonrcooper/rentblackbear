@@ -11,8 +11,8 @@ import { useRef, useState } from "react";
 
 import { COLORS, FONT } from "../budget/lib/tokens";
 
-const ACCENT = "#0bafb0";
-const DANGER = "#b3261e";
+const ACCENT = COLORS.accent;
+const DANGER = COLORS.red;
 
 function Btn({ onClick, tone = "ghost", disabled, children }) {
   const bg = tone === "danger" ? DANGER : tone === "solid" ? ACCENT : COLORS.surface;

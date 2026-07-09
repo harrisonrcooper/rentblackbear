@@ -54,6 +54,41 @@ export const COLORS = {
 //   midnight — dark fintech (glowing mint accent, deep navy surfaces)
 //   aurora   — warm cream + rich green brand
 export const THEME_PALETTES = {
+  // quarry — the home-build planner's palette. Warm stone, clay accent,
+  // hairline borders, colour rationed to things that are actionable. Named
+  // for the material palette of the house it plans: white oak, quartzite,
+  // tadelakt plaster, gunmetal.
+  quarry: {
+    "bb-bg":             "#faf8f5",
+    "bb-surface":        "#ffffff",
+    "bb-surface-alt":    "#fdfcfa",
+    "bb-surface-tint":   "#f4f1ec",
+    "bb-border":         "#e8e3db",
+    "bb-border-strong":  "#d8d1c5",
+    "bb-text":           "#1c1b1a",
+    "bb-text-muted":     "#6b6a67",
+    "bb-text-faint":     "#9c9b96",
+    "bb-accent":         "#9c5a3c",
+    "bb-accent-soft":    "rgba(156,90,60,0.09)",
+    "bb-on-accent":      "#ffffff",
+    "bb-green":          "#2f7d63",
+    "bb-green-bg":       "rgba(47,125,99,0.09)",
+    "bb-red":            "#b3261e",
+    "bb-red-bg":         "rgba(179,38,30,0.07)",
+    "bb-amber":          "#9a6b1f",
+    "bb-amber-bg":       "rgba(154,107,31,0.09)",
+    "bb-blue":           "#3a5f8a",
+    "bb-blue-bg":        "rgba(58,95,138,0.09)",
+    "bb-purple":         "#5b4bb5",
+    "bb-purple-bg":      "rgba(91,75,181,0.08)",
+    "bb-shadow":         "0 1px 2px rgba(28,27,26,0.05)",
+    "bb-shadow-lg":      "0 24px 60px rgba(28,27,26,0.14)",
+    "bb-hero-bg":        "#ffffff",
+    "bb-hero-ink":       "#1c1b1a",
+    "bb-hero-ink-soft":  "#6b6a67",
+    "bb-hero-track":     "#f4f1ec",
+    "bb-hero-fill":      "#9c5a3c",
+  },
   daylight: {
     "bb-bg":             "#f7f9fc",
     "bb-surface":        "#ffffff",

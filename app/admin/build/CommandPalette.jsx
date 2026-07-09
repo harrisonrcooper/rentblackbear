@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { COLORS, FONT } from "../budget/lib/tokens";
 import { buildSearchIndex, search } from "@/lib/build/search";
 
-const ACCENT = "#0bafb0";
+const ACCENT = COLORS.accent;
 const MAX_RESULTS = 12;
 
 export default function CommandPalette({ open, onClose, onOpen, state, tasks, onJump }) {
@@ -132,7 +132,7 @@ export default function CommandPalette({ open, onClose, onOpen, state, tasks, on
                 style={{
                   width: "100%", display: "flex", alignItems: "center", gap: 12,
                   padding: "10px 12px", border: "none", borderRadius: 10, cursor: "pointer",
-                  background: on ? "rgba(11,175,176,0.10)" : "transparent",
+                  background: on ? COLORS.accentSoft : "transparent",
                   textAlign: "left", fontFamily: FONT,
                 }}
               >

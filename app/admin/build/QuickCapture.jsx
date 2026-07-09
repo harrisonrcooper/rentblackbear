@@ -11,7 +11,7 @@ import { useMemo, useState } from "react";
 import { COLORS, FONT } from "../budget/lib/tokens";
 import { classify } from "@/lib/build/capture";
 
-const ACCENT = "#0bafb0";
+const ACCENT = COLORS.accent;
 
 export default function QuickCapture({ onCaptureTask, onCaptureReference }) {
   const [text, setText] = useState("");
@@ -54,7 +54,7 @@ export default function QuickCapture({ onCaptureTask, onCaptureReference }) {
         onClick={() => setOverride(value)}
         style={{
           border: `1px solid ${on ? ACCENT : COLORS.border}`,
-          background: on ? "rgba(11,175,176,0.10)" : COLORS.surface,
+          background: on ? COLORS.accentSoft : COLORS.surface,
           color: on ? ACCENT : COLORS.textMuted,
           borderRadius: 999, padding: "3px 11px", fontSize: 11.5, fontWeight: 700,
           cursor: "pointer", fontFamily: FONT,

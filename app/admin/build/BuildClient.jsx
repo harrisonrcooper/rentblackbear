@@ -28,8 +28,11 @@ function rowLabel(row) {
   return "item";
 }
 
-const ACCENT = "#0bafb0";
-const ACCENT_SOFT = "rgba(11,175,176,0.12)";
+const ACCENT = COLORS.accent;
+const ACCENT_SOFT = COLORS.accentSoft;
+// Loaded by app/layout.jsx via next/font. Used for the project and room
+// titles only — the editorial note that says "this is a house, not a CRM".
+const SERIF = "var(--font-source-serif), 'Source Serif 4', Georgia, serif";
 const DOC_ICON = "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8";
 const EXTERNAL_ICON = "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14L21 3";
 const CAMERA_ICON = "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z";
@@ -43,27 +46,40 @@ const ENERGY_ICON = "M13 2L3 14h7l-1 8 10-12h-7z";
 const PHOTO_PHASES = ["", "Site & foundation", "Framing", "Dry-in", "Rough-ins", "Insulation & drywall", "Interior finishes", "Exterior & landscape", "Final"];
 const PAY_METHODS = ["Check", "ACH", "Wire", "Card", "Cash", "Loan draw"];
 
+// Twenty flat nav items is a wall. Three verbs is a workflow: what you're
+// still figuring out, what you owe someone an answer on, what's underway.
+//
+// `count` names the BuildState array whose live rows are tallied beside the
+// label, so the nav says how much is in each section without opening it.
+const NAV_GROUPS = ["Plan", "Decide", "Track"];
+
 const SECTIONS = [
-  { id: "overview",   label: "Overview",       icon: ICON.home },
-  { id: "inspiration", label: "Inspiration",   icon: "M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z M21 15l-5-5L5 21" },
-  { id: "references", label: "References",     icon: "M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" },
-  { id: "palette",    label: "Materials",      icon: "M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" },
-  { id: "wants",      label: "Wants & Needs",  icon: ICON.flag },
-  { id: "rooms",      label: "Rooms & Spaces", icon: ICON.building },
-  { id: "costs",      label: "Costs",          icon: ICON.envelope },
-  { id: "changeorders", label: "Change Orders", icon: CHANGE_ORDER_ICON },
-  { id: "payments",   label: "Payments",       icon: PAYMENT_ICON },
-  { id: "milestones", label: "Milestones",     icon: ICON.calendar },
-  { id: "inspections", label: "Inspections",   icon: INSPECTION_ICON },
-  { id: "selections", label: "Selections",     icon: ICON.edit },
-  { id: "decisions",  label: "Decisions",      icon: RFI_ICON },
-  { id: "team",       label: "Team & Vendors", icon: ICON.family },
-  { id: "documents",  label: "Documents",      icon: "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" },
-  { id: "photos",     label: "Progress Photos", icon: CAMERA_ICON },
-  { id: "punchlist",  label: "Punch List",     icon: PUNCH_ICON },
-  { id: "asbuilt",    label: "As-Built & Warranty", icon: ASBUILT_ICON },
-  { id: "energy",     label: "Energy",         icon: ENERGY_ICON },
-  { id: "brief",      label: "Architect Brief", icon: DOC_ICON },
+  { id: "overview",   group: "Plan",   label: "Overview",       icon: ICON.home },
+  { id: "inspiration", group: "Plan",  label: "Inspiration",    icon: "M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z M21 15l-5-5L5 21", count: "boards" },
+  { id: "rooms",      group: "Plan",   label: "Rooms & Spaces", icon: ICON.building, count: "rooms" },
+  { id: "wants",      group: "Plan",   label: "Wants & Needs",  icon: ICON.flag, count: "wishlist" },
+  { id: "references", group: "Plan",   label: "References",     icon: "M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z", count: "references" },
+  // Renamed: this section renders the `palette` array — colour swatches and
+  // finishes, not a product catalogue. The catalogue does not exist yet.
+  { id: "palette",    group: "Plan",   label: "Colors & Finishes", icon: "M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z", count: "palette" },
+
+  { id: "selections", group: "Decide", label: "Selections",     icon: ICON.edit, count: "selections" },
+  // Renamed: this renders the `rfis` array — open questions awaiting an
+  // answer, not a log of decisions made and why.
+  { id: "decisions",  group: "Decide", label: "Open Questions", icon: RFI_ICON, count: "rfis" },
+  { id: "team",       group: "Decide", label: "Team & Vendors", icon: ICON.family, count: "team" },
+  { id: "brief",      group: "Decide", label: "Architect Brief", icon: DOC_ICON },
+
+  { id: "costs",      group: "Track",  label: "Costs",          icon: ICON.envelope, count: "costs" },
+  { id: "changeorders", group: "Track", label: "Change Orders", icon: CHANGE_ORDER_ICON, count: "change_orders" },
+  { id: "payments",   group: "Track",  label: "Payments",       icon: PAYMENT_ICON, count: "payments" },
+  { id: "milestones", group: "Track",  label: "Milestones",     icon: ICON.calendar, count: "milestones" },
+  { id: "inspections", group: "Track", label: "Inspections",    icon: INSPECTION_ICON, count: "inspections" },
+  { id: "punchlist",  group: "Track",  label: "Punch List",     icon: PUNCH_ICON, count: "punch_list" },
+  { id: "photos",     group: "Track",  label: "Progress Photos", icon: CAMERA_ICON, count: "photos" },
+  { id: "documents",  group: "Track",  label: "Documents",      icon: "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z", count: "documents" },
+  { id: "asbuilt",    group: "Track",  label: "As-Built & Warranty", icon: ASBUILT_ICON },
+  { id: "energy",     group: "Track",  label: "Energy",         icon: ENERGY_ICON },
 ];
 
 const DOC_CATEGORY_ORDER = [
@@ -184,19 +200,49 @@ function AddBtn({ label, onClick }) {
 
 // ── Section views ────────────────────────────────────────────────────
 
-function StatTile({ label, value, sub, accent, onClick }) {
+/** A ring, because the single most useful thing to know is "how far along". */
+function ProgressRing({ pct, size = 116, stroke = 9, caption }) {
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const filled = circumference * (Math.min(100, Math.max(0, pct)) / 100);
+
+  return (
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={COLORS.surfaceTint} strokeWidth={stroke} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none" stroke={ACCENT} strokeWidth={stroke}
+          strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference - filled}
+        />
+      </svg>
+      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center" }}>
+        <div>
+          <div style={{ fontSize: 25, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{pct}%</div>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: COLORS.textFaint, marginTop: 3 }}>{caption}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatTile({ label, value, sub, accent, pct, onClick }) {
   return (
     <button
       onClick={onClick}
       style={{
-        textAlign: "left", background: "#fff", border: `1px solid ${COLORS.border}`,
-        borderRadius: 14, padding: 14, cursor: "pointer", fontFamily: FONT,
-        display: "flex", flexDirection: "column", gap: 3, minWidth: 0,
+        textAlign: "left", background: COLORS.surface, border: `1px solid ${COLORS.border}`,
+        borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: FONT,
+        display: "flex", flexDirection: "column", gap: 2, minWidth: 0,
       }}
     >
-      <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: COLORS.textFaint }}>{label}</span>
-      <span style={{ fontSize: 21, fontWeight: 800, color: accent || COLORS.text, fontVariantNumeric: "tabular-nums" }}>{value}</span>
-      <span style={{ fontSize: 11.5, fontWeight: 600, color: COLORS.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</span>
+      <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: COLORS.textFaint }}>{label}</span>
+      <span style={{ fontSize: 21, fontWeight: 700, letterSpacing: "-0.02em", color: accent || COLORS.text, fontVariantNumeric: "tabular-nums", marginTop: 4 }}>{value}</span>
+      <span style={{ fontSize: 11.5, color: COLORS.textFaint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</span>
+      {typeof pct === "number" && (
+        <span style={{ display: "block", height: 3, borderRadius: 2, background: COLORS.surfaceTint, marginTop: 10, overflow: "hidden" }}>
+          <span style={{ display: "block", height: "100%", width: `${Math.min(100, Math.max(0, pct))}%`, background: accent || ACCENT, borderRadius: 2 }} />
+        </span>
+      )}
     </button>
   );
 }
@@ -259,70 +305,95 @@ function Dashboard({ state, onJump }) {
     ["Stories", state.stories || "—"],
   ];
 
+  const selDecided = sels.length - openSel.length;
+  const wishPct = wishes.length ? Math.round((wishDone / wishes.length) * 100) : 0;
+  const selPct = sels.length ? Math.round((selDecided / sels.length) * 100) : 0;
+  const inspPct = insps.length ? Math.round((inspPassed / insps.length) * 100) : 0;
+
+  // Overall progress spans the three things that actually mark a build's
+  // advance: milestones reached, selections decided, inspections passed.
+  // Equal weight, honest arithmetic, and the caption says which.
+  const overallDone = msDone + selDecided + inspPassed;
+  const overallTotal = ms.length + sels.length + insps.length;
+  const overallPct = overallTotal ? Math.round((overallDone / overallTotal) * 100) : 0;
+
   const tiles = [
-    ["Revised cost", fmtCompact(revised), budget ? `of ${fmtCompact(budget)} target` : coNet ? "incl. change orders" : "estimated · no target", overBudget ? COLORS.red : COLORS.text, "costs"],
-    ["Paid to date", fmtCompact(totalPaid), revised ? `${fmtCompact(Math.max(0, revised - totalPaid))} left to pay` : `${pays.length} payments`, COLORS.text, "payments"],
-    ["Timeline", `${msPct}%`, nextMs ? `Next: ${nextMs.label}` : `${msDone}/${ms.length} milestones done`, ACCENT, "milestones"],
-    ["Inspections", `${inspPassed}/${insps.length}`, inspFailed.length ? `${inspFailed.length} failed` : "passed", inspFailed.length ? COLORS.red : COLORS.text, "inspections"],
-    ["Selections", `${openSel.length} open`, `${sels.length - openSel.length}/${sels.length} decided`, openSel.length ? COLORS.amber : COLORS.green, "selections"],
-    ["Loan drawn", fmtCompact(drawn), loan.amount_cents ? `of ${fmtCompact(loan.amount_cents)} facility` : "no loan set", overDrawn ? COLORS.red : COLORS.text, "costs"],
-    ["Wishlist", `${wishDone}/${wishes.length}`, "wants checked off", COLORS.text, "wants"],
-    ["Rooms", `${rooms.length}`, "spaces planned", COLORS.text, "rooms"],
-    ["Photos", `${photos.length}`, "progress photos logged", COLORS.text, "photos"],
-    ["Documents", `${docLinked}/${docs.length}`, "linked & on file", COLORS.text, "documents"],
+    ["Revised cost", fmtCompact(revised), budget ? `of ${fmtCompact(budget)} target` : coNet ? "incl. change orders" : "estimated · no target", overBudget ? COLORS.red : COLORS.text, undefined, "costs"],
+    ["Paid to date", fmtCompact(totalPaid), revised ? `${fmtCompact(Math.max(0, revised - totalPaid))} left to pay` : `${pays.length} payments`, COLORS.text, undefined, "payments"],
+    ["Milestones", `${msDone} / ${ms.length}`, nextMs ? `Next: ${nextMs.label}` : msDone ? "on track" : "none complete yet", COLORS.text, msPct, "milestones"],
+    ["Selections", `${selDecided} / ${sels.length}`, openSel.length ? `${openSel.length} still open` : "all decided", openSel.length ? COLORS.amber : COLORS.green, selPct, "selections"],
+    ["Inspections", `${inspPassed} / ${insps.length}`, inspFailed.length ? `${inspFailed.length} failed` : insps.length ? "passed" : "none scheduled", inspFailed.length ? COLORS.red : COLORS.text, inspPct, "inspections"],
+    ["Wants", `${wishDone} / ${wishes.length}`, `${wishes.filter((w) => w.priority === "need").length} are must-haves`, COLORS.text, wishPct, "wants"],
+    ["Loan drawn", fmtCompact(drawn), loan.amount_cents ? `of ${fmtCompact(loan.amount_cents)} facility` : "no loan set", overDrawn ? COLORS.red : COLORS.text, undefined, "costs"],
+    ["Rooms", `${rooms.length}`, "spaces planned", COLORS.text, undefined, "rooms"],
+    ["Photos", `${photos.length}`, "progress photos logged", COLORS.text, undefined, "photos"],
+    ["Documents", `${docLinked} / ${docs.length}`, "linked and on file", COLORS.text, undefined, "documents"],
   ];
 
   return (
     <>
-      <div style={{ background: `linear-gradient(135deg, ${ACCENT}, #07908f)`, borderRadius: 16, padding: 18, color: "#fff", marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.85, textTransform: "uppercase", letterSpacing: 0.6 }}>Home build · command center</div>
-        <div style={{ fontSize: 22, fontWeight: 800, marginTop: 3 }}>{state.project_name || "Our Dream Home"}</div>
-        {state.style && <div style={{ fontSize: 12.5, opacity: 0.9, marginTop: 4, lineHeight: 1.4 }}>{state.style}</div>}
-        <div style={{ display: "flex", gap: 22, marginTop: 14 }}>
-          {vitals.map(([l, v]) => (
-            <div key={l}>
-              <div style={{ fontSize: 10.5, fontWeight: 700, opacity: 0.8, textTransform: "uppercase", letterSpacing: 0.4 }}>{l}</div>
-              <div style={{ fontSize: 17, fontWeight: 800, marginTop: 1 }}>{v}</div>
-            </div>
-          ))}
+      <div style={{ display: "flex", alignItems: "center", gap: 26, marginBottom: 26 }}>
+        <ProgressRing pct={overallPct} caption="Complete" />
+        <div style={{ minWidth: 0 }}>
+          <h2 style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.15, margin: 0 }}>
+            {state.project_name || "Our Dream Home"}
+          </h2>
+          {state.style && (
+            <p style={{ fontSize: 13.5, color: COLORS.textMuted, margin: "6px 0 0", maxWidth: "52ch", lineHeight: 1.5 }}>{state.style}</p>
+          )}
+          <div style={{ display: "flex", gap: 20, marginTop: 14 }}>
+            {vitals.map(([l, v]) => (
+              <div key={l}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: v === "—" ? COLORS.textFaint : COLORS.text }}>{v === "—" ? "Not set" : v}</div>
+                <div style={{ fontSize: 11.5, color: COLORS.textFaint }}>{l}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      <Card title="Needs attention">
-        {alerts.length ? (
-          <div style={{ display: "grid", gap: 8, paddingTop: 4 }}>
-            {alerts.map((a, i) => (
-              <button
-                key={i}
-                onClick={() => onJump(a.to)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 10, textAlign: "left",
-                  background: COLORS.surfaceTint, border: "none", borderRadius: 10,
-                  padding: "10px 12px", cursor: "pointer", fontFamily: FONT, width: "100%",
-                }}
-              >
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: a.tone, flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: COLORS.text }}>{a.text}</span>
-                <Icon d={ICON.chevR} size={13} color={COLORS.textFaint} />
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 4px 4px" }}>
+      <SectionHead title="Needs attention" note={alerts.length ? `${alerts.length} ${alerts.length === 1 ? "thing" : "things"}` : "Nothing right now"} />
+      <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 12, background: COLORS.surface, overflow: "hidden", marginBottom: 4 }}>
+        {alerts.length ? alerts.map((a, i) => (
+          <button
+            key={i}
+            onClick={() => onJump(a.to)}
+            style={{
+              display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%",
+              background: "transparent", border: "none",
+              borderBottom: i === alerts.length - 1 ? "none" : `1px solid ${COLORS.border}`,
+              padding: "12px 14px", cursor: "pointer", fontFamily: FONT,
+            }}
+          >
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: a.tone, flexShrink: 0 }} />
+            <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500, color: COLORS.text }}>{a.text}</span>
+            <Icon d={ICON.chevR} size={13} color={COLORS.textFaint} />
+          </button>
+        )) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px" }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: COLORS.green, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: COLORS.textMuted }}>Everything&apos;s on track — no overdue dates, no budget overruns.</span>
+            <span style={{ fontSize: 13.5, color: COLORS.textMuted }}>Everything&apos;s on track — no overdue dates, no budget overruns.</span>
           </div>
         )}
-      </Card>
+      </div>
 
-      <Card title="At a glance">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, paddingTop: 6 }}>
-          {tiles.map(([label, value, sub, accent, to]) => (
-            <StatTile key={label} label={label} value={value} sub={sub} accent={accent} onClick={() => onJump(to)} />
-          ))}
-        </div>
-      </Card>
+      <SectionHead title="At a glance" note="Every tile opens its section" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(158px, 1fr))", gap: 10 }}>
+        {tiles.map(([label, value, sub, accent, pct, to]) => (
+          <StatTile key={label} label={label} value={value} sub={sub} accent={accent} pct={pct} onClick={() => onJump(to)} />
+        ))}
+      </div>
     </>
+  );
+}
+
+/** Shared section header: title, and a quiet note that explains it. */
+function SectionHead({ title, note }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "30px 0 11px" }}>
+      <h3 style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-0.01em", margin: 0 }}>{title}</h3>
+      {note && <span style={{ fontSize: 12, color: COLORS.textFaint }}>{note}</span>}
+    </div>
   );
 }
 
@@ -2039,7 +2110,7 @@ export default function BuildClient({ initialState, initialVersion = 0 }) {
   }, [section, shown, captureTask, captureReference]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div data-bb-theme="light" style={{ display: "flex", minHeight: "100vh", background: COLORS.bg, fontFamily: FONT }}>
+    <div data-bb-theme="quarry" style={{ display: "flex", minHeight: "100vh", background: COLORS.bg, fontFamily: FONT }}>
       <style dangerouslySetInnerHTML={{ __html: themeStylesheet() }} />
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
@@ -2061,7 +2132,7 @@ export default function BuildClient({ initialState, initialVersion = 0 }) {
             <a href="/admin/budget" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: COLORS.textFaint, textDecoration: "none", textTransform: "uppercase", letterSpacing: "0.1em" }}>
               <Icon d={ICON.chevL} size={12} /> Admin
             </a>
-            <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800, letterSpacing: "-0.025em" }}>Build</div>
+            <div style={{ marginTop: 8, fontFamily: SERIF, fontSize: 24, fontWeight: 600, letterSpacing: "-0.015em" }}>Build</div>
             <div style={{ marginTop: 2, fontSize: 11, color: saveError ? "#b3261e" : COLORS.textFaint, fontWeight: 600 }}>
               {saveError ? "Not saved" : saved ? "All changes saved" : "Saving…"}
             </div>
@@ -2081,26 +2152,40 @@ export default function BuildClient({ initialState, initialVersion = 0 }) {
               <kbd style={{ fontSize: 10, fontWeight: 700, border: `1px solid ${COLORS.border}`, borderRadius: 4, padding: "1px 5px" }}>⌘K</kbd>
             </button>
           </div>
-          <nav style={{ padding: 12, display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
-            {SECTIONS.map((s) => {
-              const on = section === s.id;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => jumpTo(s.id)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
-                    borderRadius: 10, border: "none", cursor: "pointer", textAlign: "left",
-                    fontFamily: FONT, fontSize: 13.5, fontWeight: on ? 700 : 600,
-                    background: on ? ACCENT_SOFT : "transparent",
-                    color: on ? ACCENT : COLORS.textMuted,
-                  }}
-                >
-                  <Icon d={s.icon} size={15} />
-                  {s.label}
-                </button>
-              );
-            })}
+          <nav style={{ padding: "10px 10px 16px", display: "flex", flexDirection: "column", gap: 1, flex: 1, overflowY: "auto" }}>
+            {NAV_GROUPS.map((group) => (
+              <div key={group}>
+                <div style={{
+                  fontSize: 10.5, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase",
+                  color: COLORS.textFaint, padding: "14px 8px 6px",
+                }}>
+                  {group}
+                </div>
+                {SECTIONS.filter((s) => s.group === group).map((s) => {
+                  const on = section === s.id;
+                  const n = s.count ? (shown[s.count] || []).length : null;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => jumpTo(s.id)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 9, padding: "7px 8px", width: "100%",
+                        borderRadius: 6, border: "none", cursor: "pointer", textAlign: "left",
+                        fontFamily: FONT, fontSize: 13, fontWeight: on ? 600 : 500,
+                        background: on ? ACCENT_SOFT : "transparent",
+                        color: on ? ACCENT : COLORS.textMuted,
+                      }}
+                    >
+                      <Icon d={s.icon} size={15} />
+                      <span style={{ flex: 1 }}>{s.label}</span>
+                      {n ? (
+                        <span style={{ fontSize: 11, fontWeight: 600, color: on ? ACCENT : COLORS.textFaint }}>{n}</span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
           <BackupPanel />
         </aside>
