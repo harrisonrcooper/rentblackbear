@@ -66,9 +66,13 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import * as db from "@/lib/db";
 
 /* ─── helpers ─── */
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+// Haptic feedback wrapper — soft vibration on key mobile actions. No-op on
+// desktop / unsupported browsers. Keeps call sites single-line.
+const haptic = (ms = 10) => { if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(ms); };
 const fmtAmt = (s) => {
   if (!s) return "$0";
   const [int, dec] = s.split(".");
@@ -247,6 +251,12 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
   const [showHelp, setShowHelp] = useState(false);
   const [saving, setSaving] = useState(false);
   const [shake, setShake] = useState(false);
+  // Recurring (set on the Review step). Presets cover the common cadences;
+  // Custom lets the user pick any count + unit (e.g. every 2 months, every 3 weeks).
+  const [recurring, setRecurring] = useState(false);
+  const [recFreq, setRecFreq] = useState("monthly");
+  const [recCustomCount, setRecCustomCount] = useState(1);
+  const [recCustomUnit, setRecCustomUnit] = useState("months"); // days|weeks|months|years
 
   /* derived */
   const activeProps = props.filter(p => !(p.units||[]).every(u => u.ownerOccupied));
@@ -257,6 +267,37 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
   const yearIdx = years.indexOf(selY);
   const days = Array.from({ length: daysInMonth(selM, selY) }, (_, i) => String(i + 1));
   const dateStr = fmtDate(selM, selD, selY);
+
+  // Recurring math — compute the next charge date from the selected expense
+  // date using true calendar arithmetic (not a fixed day count) for month-based
+  // intervals so a Jan 31 monthly expense lands on Feb 28, not Mar 3.
+  const FREQ_PRESETS = [
+    { key: "weekly",    label: "Weekly",     desc: "Every 7 days" },
+    { key: "biweekly",  label: "Bi-weekly",  desc: "Every 14 days" },
+    { key: "monthly",   label: "Monthly",    desc: "Same day each month" },
+    { key: "quarterly", label: "Quarterly",  desc: "Every 3 months" },
+    { key: "yearly",    label: "Yearly",     desc: "Same day each year" },
+    { key: "custom",    label: "Custom",     desc: "Every X days" },
+  ];
+  const computeNextDate = (fromSelM, fromSelD, fromSelY, freq, customCount, customUnit) => {
+    const base = new Date(fromSelY, fromSelM, fromSelD + 1);
+    const next = new Date(base);
+    if (freq === "weekly")    next.setDate(base.getDate() + 7);
+    else if (freq === "biweekly")  next.setDate(base.getDate() + 14);
+    else if (freq === "monthly")   next.setMonth(base.getMonth() + 1);
+    else if (freq === "quarterly") next.setMonth(base.getMonth() + 3);
+    else if (freq === "yearly")    next.setFullYear(base.getFullYear() + 1);
+    else {
+      const n = Math.max(1, Math.min(999, Number(customCount) || 1));
+      if (customUnit === "days")       next.setDate(base.getDate() + n);
+      else if (customUnit === "weeks") next.setDate(base.getDate() + n * 7);
+      else if (customUnit === "years") next.setFullYear(base.getFullYear() + n);
+      else                             next.setMonth(base.getMonth() + n); // months
+    }
+    return next;
+  };
+  const nextChargeDate = recurring ? computeNextDate(selM, selD, selY, recFreq, recCustomCount, recCustomUnit) : null;
+  const nextChargeStr = nextChargeDate ? nextChargeDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
 
   /* steps: 0=amount 1=type 2=property 3=category 4=subcat 5=vendor 6=date 7=note 8=review */
   const TOTAL_STEPS = 9;
@@ -269,13 +310,14 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
       setCategory(""); setSubcat(""); setVendor(""); setVendorQuery(""); setNote("");
       setSelM(today().getMonth()); setSelD(today().getDate() - 1); setSelY(today().getFullYear());
       setDateMode("today"); setSaving(false); setShowHelp(false);
+      setRecurring(false); setRecFreq("monthly"); setRecCustomCount(1); setRecCustomUnit("months");
       const prevOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
       return () => { document.body.style.overflow = prevOverflow; };
     }
   }, [open]);
 
-  /* keypad */
+  /* keypad — enforces max $999,999.99 so we don't silently accept 8-digit rent-sized expenses */
   const pk = (k) => {
     if (k === "del") {
       setDigs(p => { const n = p.slice(0, -1); if (p.endsWith(".")) setHasDot(false); return n; });
@@ -284,7 +326,8 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
     } else {
       setDigs(p => {
         if (hasDot) { const parts = p.split("."); if (parts[1] && parts[1].length >= 2) return p; }
-        if (p.length >= 8) return p;
+        const intPart = hasDot ? p.split(".")[0] : p;
+        if (intPart.length >= 6) { triggerShake(); return p; }
         return p + k;
       });
     }
@@ -307,9 +350,19 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
   };
 
   const back = () => {
-    if (step === 0) { onClose(); return; }
+    if (step === 0) { tryClose(); return; }
     if (step === 3 && expType === "business") { setStep(1); return; }
     setStep(s => s - 1);
+  };
+
+  /* Unsaved-changes guard. Intercepts the X, overlay tap, and step-0 back tap.
+     Dirty = user has typed an amount, picked a type, category, subcat, vendor,
+     or wrote a note. Fresh open from step 0 closes silently. */
+  const isDirty = () => !!(digs || expType || category || subcat || vendor || propKeys.length || note);
+  const tryClose = () => {
+    if (!isDirty()) { onClose(); return; }
+    // eslint-disable-next-line no-alert
+    if (typeof window !== "undefined" && window.confirm("You have unsaved changes. Leave without saving?")) onClose();
   };
 
   /* date quick-set */
@@ -347,9 +400,16 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
   /* save */
   const handleSave = async () => {
     if (saving) return;
+    haptic(18);
     setSaving(true);
     const amount = parseFloat(digs) || 0;
     const dateISO = new Date(selY, selM, selD + 1).toISOString().split("T")[0];
+    const recurringMeta = recurring ? {
+      freq: recFreq,
+      customCount: recFreq === "custom" ? (Number(recCustomCount) || 1) : null,
+      customUnit:  recFreq === "custom" ? recCustomUnit : null,
+      nextDate: computeNextDate(selM, selD, selY, recFreq, recCustomCount, recCustomUnit).toISOString().split("T")[0],
+    } : null;
     const base = {
       type: expType,
       category,
@@ -357,26 +417,41 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
       vendor,
       date: dateISO,
       note,
+      recurring: recurringMeta,
       createdAt: new Date().toISOString(),
     };
 
     const selProps = propKeys.includes("all") ? activeProps : activeProps.filter(p => propKeys.includes(p.id));
     const descStr = `${category}${subcat ? " \u2014 " + subcat : ""}${vendor ? " / " + vendor : ""}`;
+    // Compute the new expense rows, update state, and explicitly save to Supabase
+    // BEFORE onClose. Without this explicit save, a fast close could unmount the
+    // 800ms debounced autosave in page.jsx and lose the expense silently.
+    let newExpenses = expenses;
+    let newTxns = txns;
     if (expType === "property" && selProps.length > 1) {
       const perProp = Math.round((amount / selProps.length) * 100) / 100;
       const records = selProps.map(p => ({
         id: uidGen(), ...base, propId: p.id, propName: p.name, amount: perProp, desc: descStr,
         splitOf: propKeys.includes("all") ? "all" : "custom",
       }));
-      setExpenses(prev => [...records, ...prev]);
-      setTxns(prev => [...records.map(r => ({ ...r, txnType: "expense" })), ...prev]);
+      newExpenses = [...records, ...expenses];
+      newTxns = [...records.map(r => ({ ...r, txnType: "expense" })), ...txns];
+      setExpenses(newExpenses);
+      setTxns(newTxns);
     } else {
       const p = selProps[0] || null;
       const record = {
         id: uidGen(), ...base, propId: p?.id || null, propName: p?.name || null, amount, desc: descStr,
       };
-      setExpenses(prev => [record, ...prev]);
-      setTxns(prev => [{ ...record, txnType: "expense" }, ...prev]);
+      newExpenses = [record, ...expenses];
+      newTxns = [{ ...record, txnType: "expense" }, ...txns];
+      setExpenses(newExpenses);
+      setTxns(newTxns);
+    }
+    try {
+      await Promise.all([db.saveExpenses(newExpenses), db.saveTxns(newTxns)]);
+    } catch (saveErr) {
+      console.error("[AddExpenseSheet] explicit save failed:", saveErr);
     }
 
     // Update vendor totalPaid for 1099 tracking
@@ -572,7 +647,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: .18 }}
-          onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+          onClick={(e) => { if (e.target === e.currentTarget) tryClose(); }}
         >
           <motion.div
             className="exp-sheet"
@@ -581,6 +656,16 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.4 }}
+            onDragEnd={(_, info) => {
+              // Swipe-down-to-dismiss: offset past ~30% of viewport OR a fast downward velocity closes.
+              if (info.offset.y > 140 || info.velocity.y > 600) {
+                if (navigator.vibrate) navigator.vibrate(8);
+                tryClose();
+              }
+            }}
           >
 
           {/* HEADER */}
@@ -588,8 +673,8 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
             <button style={S.hdrBtn} onClick={back}>{step === 0 ? "Cancel" : "\u2190 Back"}</button>
             <span style={S.hdrTitle}>{STEP_TITLES[step]}</span>
             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 60, justifyContent: "flex-end" }}>
-              {step === 1 && <button style={{ ...S.hdrBtn, display: "flex", alignItems: "center" }} onClick={() => setShowHelp(true)}><QuestionIc /></button>}
-              <button style={{ ...S.hdrBtn, display: "flex", alignItems: "center", padding: 6 }} onClick={onClose}>
+              {[1, 3, 4, 5].includes(step) && <button style={{ ...S.hdrBtn, display: "flex", alignItems: "center" }} onClick={() => setShowHelp(true)}><QuestionIc /></button>}
+              <button style={{ ...S.hdrBtn, display: "flex", alignItems: "center", padding: 6 }} onClick={tryClose}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -650,7 +735,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
               </div>
               <div style={{ ...S.pickScroll, gap: 9 }}>
                 {EXPENSE_TYPES.map(t => (
-                  <motion.div key={t.key} style={S.typeCard(expType === t.key)} onClick={() => { setExpType(t.key); setTimeout(() => { if (t.key === "business") setStep(3); else setStep(2); }, 200); }} whileTap={{ scale: .98 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
+                  <motion.div key={t.key} style={S.typeCard(expType === t.key)} onClick={() => { haptic(8); if (t.key !== expType) { setCategory(""); setSubcat(""); setPropKeys([]); } setExpType(t.key); setTimeout(() => { if (t.key === "business") setStep(3); else setStep(2); }, 200); }} whileTap={{ scale: .98 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
                     <div style={S.typeIcWrap}>{t.icon(expType === t.key ? acc : "rgba(255,255,255,.4)")}</div>
                     <div style={S.typeNm}>{t.name}</div>
                     <div style={S.typeDs}>{t.desc}</div>
@@ -700,7 +785,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
                   <PickCard
                     key={c.key}
                     selected={category === c.key}
-                    onClick={() => { setCategory(c.key); setSubcat(""); setTimeout(() => setStep(4), 200); }}
+                    onClick={() => { haptic(8); setCategory(c.key); setSubcat(""); setTimeout(() => setStep(4), 200); }}
                     name={c.key}
                     desc={c.line}
                   />
@@ -719,29 +804,30 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
                   <PickCard
                     key={sc.id}
                     selected={subcat === sc.label}
-                    onClick={() => { setSubcat(sc.label); setTimeout(() => setStep(5), 200); }}
+                    onClick={() => { haptic(8); setSubcat(sc.label); setTimeout(() => setStep(5), 200); }}
                     name={sc.label}
                   />
                 ))}
+                {/* + row flows below the last item; sticky-bottom keeps it visible if the list overflows */}
+                {showSubcatInput ? (
+                  <div style={{ display: "flex", gap: 8, padding: "8px 0", position: "sticky", bottom: 0, background: "#161618", marginTop: 4 }}>
+                    <input
+                      autoFocus
+                      style={{ ...S.srchInp, background: "#1f1f22", borderRadius: 10, padding: "10px 12px", border: "1.5px solid rgba(255,255,255,.08)", flex: 1 }}
+                      placeholder="Subcategory name"
+                      value={newSubcatVal}
+                      onChange={e => setNewSubcatVal(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") addNewSubcat(); }}
+                    />
+                    <button style={{ background: acc, border: "none", borderRadius: 10, padding: "10px 16px", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }} onClick={addNewSubcat}>Add</button>
+                  </div>
+                ) : (
+                  <div style={{ ...S.addRow, padding: "10px 0", position: "sticky", bottom: 0, background: "#161618" }} onClick={() => setShowSubcatInput(true)}>
+                    <PlusIc color={acc} />
+                    <span style={{ fontSize: 14, fontWeight: 500, color: acc }}>Add subcategory</span>
+                  </div>
+                )}
               </div>
-              {showSubcatInput ? (
-                <div style={{ display: "flex", gap: 8, padding: "8px 16px", flexShrink: 0 }}>
-                  <input
-                    autoFocus
-                    style={{ ...S.srchInp, background: "#1f1f22", borderRadius: 10, padding: "10px 12px", border: "1.5px solid rgba(255,255,255,.08)", flex: 1 }}
-                    placeholder="Subcategory name"
-                    value={newSubcatVal}
-                    onChange={e => setNewSubcatVal(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") addNewSubcat(); }}
-                  />
-                  <button style={{ background: acc, border: "none", borderRadius: 10, padding: "10px 16px", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }} onClick={addNewSubcat}>Add</button>
-                </div>
-              ) : (
-                <div style={S.addRow} onClick={() => setShowSubcatInput(true)}>
-                  <PlusIc color={acc} />
-                  <span style={{ fontSize: 14, fontWeight: 500, color: acc }}>Add subcategory</span>
-                </div>
-              )}
             </>}
 
             {/* ── STEP 5: VENDOR ── */}
@@ -769,16 +855,22 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
                     <PickCard
                       key={i}
                       selected={vendor === vName}
-                      onClick={() => { setVendor(vName); setVendorQuery(vName); setTimeout(() => setStep(6), 200); }}
+                      onClick={() => { haptic(8); setVendor(vName); setVendorQuery(vName); setTimeout(() => setStep(6), 200); }}
                       name={vName}
                       desc={totalPaid >= 600 ? `$${totalPaid.toLocaleString()} YTD — 1099 required` : totalPaid > 0 ? `$${totalPaid.toLocaleString()} YTD` : null}
                     />
                   );
                 })}
-                {vendorQuery && !filteredVendors.find(v => (typeof v === "object" ? v.name : v).toLowerCase() === vendorQuery.toLowerCase()) && (
-                  <div style={S.addRow} onClick={addNewVendor}>
+                {/* + row — shows "Add {query}" when user typed a new name, otherwise always-visible "Add vendor" trigger */}
+                {vendorQuery && !filteredVendors.find(v => (typeof v === "object" ? v.name : v).toLowerCase() === vendorQuery.toLowerCase()) ? (
+                  <div style={{ ...S.addRow, padding: "10px 0", position: "sticky", bottom: 0, background: "#161618" }} onClick={addNewVendor}>
                     <PlusIc color={acc} />
                     <span style={{ fontSize: 14, fontWeight: 500, color: acc }}>Add &ldquo;{vendorQuery}&rdquo;</span>
+                  </div>
+                ) : (
+                  <div style={{ ...S.addRow, padding: "10px 0", position: "sticky", bottom: 0, background: "#161618" }} onClick={() => { const el = document.querySelector('input[placeholder*="Search or type"]'); if (el) el.focus(); }}>
+                    <PlusIc color={acc} />
+                    <span style={{ fontSize: 14, fontWeight: 500, color: acc }}>Add vendor</span>
                   </div>
                 )}
               </div>
@@ -789,12 +881,12 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
               <div style={{ padding: "14px 20px 8px", flexShrink: 0 }}>
                 <div style={S.pickTitle}>When?</div>
               </div>
-              <div style={S.quickRow}>
-                {[["today","Today"],["yesterday","Yesterday"],["other","Other"]].map(([m, lbl]) => (
+              <div style={{ ...S.quickRow, justifyContent: "center" }}>
+                {[["today","Today"],["yesterday","Yesterday"]].map(([m, lbl]) => (
                   <button key={m} className="exp-qb" style={S.qb(dateMode === m)} onClick={() => quickDate(m)}>{lbl}</button>
                 ))}
               </div>
-              <div style={{ ...S.wheelWrap, flex: 1 }}>
+              <div style={S.wheelWrap}>
                 <div style={S.fadeT} />
                 <div style={S.selBar} />
                 <div style={S.fadeB} />
@@ -819,6 +911,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
                   placeholder={"e.g. Replaced bathroom faucet, bedroom 3. Ask CPA about bonus depreciation."}
                   value={note}
                   onChange={e => setNote(e.target.value)}
+                  onFocus={e => setTimeout(() => e.target.scrollIntoView({ block: "center", behavior: "smooth" }), 300)}
                   rows={5}
                 />
               </div>
@@ -835,7 +928,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
                   { label: "Category", value: category },
                   subcat && { label: "Subcategory", value: subcat },
                   vendor && { label: "Vendor", value: vendor },
-                  { label: "Date", value: dateStr },
+                  { label: recurring ? "First payment" : "Date", value: dateStr },
                   note && { label: "Note", value: note },
                 ].filter(Boolean).map((row, i) => (
                   <div key={i} style={S.revRow}>
@@ -846,6 +939,82 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
                     </div>
                   </div>
                 ))}
+
+                {/* Recurring toggle + frequency picker */}
+                <div style={{ marginTop: 14, padding: "14px 16px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,.9)" }}>Make this recurring</div>
+                      <div style={{ fontSize: 12, color: "rgba(255,255,255,.45)", marginTop: 2 }}>{recurring ? "Auto-posts on a schedule" : "One-time expense"}</div>
+                    </div>
+                    <button
+                      onClick={() => setRecurring(v => !v)}
+                      aria-pressed={recurring}
+                      aria-label={recurring ? "Turn off recurring" : "Turn on recurring"}
+                      style={{ minWidth: 56, minHeight: 44, padding: "8px 4px", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      <span style={{ position: "relative", display: "block", width: 48, height: 28, borderRadius: 14, background: recurring ? acc : "rgba(255,255,255,.15)", transition: "background .15s" }}>
+                        <span style={{ position: "absolute", top: 2, left: recurring ? 22 : 2, width: 24, height: 24, borderRadius: "50%", background: "#fff", transition: "left .15s" }} />
+                      </span>
+                    </button>
+                  </div>
+
+                  {recurring && (
+                    <>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 14 }}>
+                        {FREQ_PRESETS.map(f => {
+                          const on = recFreq === f.key;
+                          return (
+                            <button
+                              key={f.key}
+                              onClick={() => setRecFreq(f.key)}
+                              style={{ padding: "12px 8px", minHeight: 44, borderRadius: 10, border: on ? `1.5px solid ${acc}` : "1.5px solid rgba(255,255,255,.08)", background: on ? rgba(acc, .12) : "rgba(255,255,255,.02)", color: on ? "#fff" : "rgba(255,255,255,.75)", fontSize: 13, fontWeight: on ? 600 : 500, cursor: "pointer", fontFamily: "inherit", transition: "all .12s" }}
+                            >
+                              {f.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {recFreq === "custom" && (
+                        <div style={{ marginTop: 12, padding: "12px", background: "rgba(0,0,0,.25)", borderRadius: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center" }}>
+                            <span style={{ fontSize: 13, color: "rgba(255,255,255,.7)" }}>Every</span>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min={1}
+                              max={999}
+                              value={recCustomCount}
+                              onChange={e => { const v = e.target.value; if (v === "") setRecCustomCount(""); else setRecCustomCount(Math.max(1, Math.min(999, parseInt(v, 10) || 1))); }}
+                              onBlur={() => { if (!recCustomCount || recCustomCount < 1) setRecCustomCount(1); }}
+                              style={{ width: 96, padding: "8px 12px", borderRadius: 8, border: "1.5px solid rgba(255,255,255,.1)", background: "#1f1f22", color: "#fff", fontSize: 16, fontFamily: "inherit", textAlign: "center", minHeight: 44 }}
+                            />
+                            <span style={{ fontSize: 13, color: "rgba(255,255,255,.7)" }}>{Number(recCustomCount) === 1 ? recCustomUnit.replace(/s$/, "") : recCustomUnit}</span>
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 6 }}>
+                            {[["days","Days"],["weeks","Weeks"],["months","Months"],["years","Years"]].map(([u, lbl]) => {
+                              const on = recCustomUnit === u;
+                              return (
+                                <button
+                                  key={u}
+                                  onClick={() => setRecCustomUnit(u)}
+                                  style={{ padding: "12px 6px", minHeight: 44, borderRadius: 8, border: on ? `1.5px solid ${acc}` : "1.5px solid rgba(255,255,255,.08)", background: on ? rgba(acc, .12) : "rgba(255,255,255,.03)", color: on ? "#fff" : "rgba(255,255,255,.7)", fontSize: 12, fontWeight: on ? 600 : 500, cursor: "pointer", fontFamily: "inherit", transition: "all .12s" }}
+                                >
+                                  {lbl}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{ marginTop: 14, fontSize: 12, color: rgba(acc, .9), textAlign: "center" }}>
+                        Next charge: <strong>{nextChargeStr}</strong>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </>}
 
@@ -853,7 +1022,8 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
           </AnimatePresence>
           </div>
 
-          {/* BOTTOM BUTTON */}
+          {/* BOTTOM BUTTON — hidden on auto-advance steps (Type/Category/Subcategory/Vendor). */}
+          {![1, 3, 4, 5].includes(step) && (
           <div style={S.bot}>
             <motion.button
               style={S.botBtn(!digs && step === 0)}
@@ -865,6 +1035,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
               {step === 8 ? (saving ? "Saving…" : "Add Expense") : step === 7 ? "Review →" : "Continue"}
             </motion.button>
           </div>
+          )}
 
           {/* HELP SHEET */}
           <AnimatePresence>
@@ -887,19 +1058,27 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
                 onClick={e => e.stopPropagation()}
               >
                 <div style={S.helpPill} />
-                <div style={S.helpTitle}>What type of expense?</div>
-                <div style={S.helpRow}>
-                  <div style={S.helpDot(acc)} />
-                  <div style={S.helpTxt}><strong style={{ color: "rgba(255,255,255,.9)" }}>Property expense</strong> &mdash; tied to a specific property. Goes on Schedule E and reduces taxable rental income. Examples: repairs, utilities, insurance.</div>
-                </div>
-                <div style={S.helpRow}>
-                  <div style={S.helpDot(rgba(acc, .6))} />
-                  <div style={S.helpTxt}><strong style={{ color: "rgba(255,255,255,.9)" }}>Business expense</strong> &mdash; the cost of running your PM business, not tied to one property. Examples: software, legal fees, CPA fees.</div>
-                </div>
-                <div style={S.helpRow}>
-                  <div style={S.helpDot(rgba(acc, .35))} />
-                  <div style={S.helpTxt}><strong style={{ color: "rgba(255,255,255,.9)" }}>Capital improvement</strong> &mdash; a major upgrade depreciated over years, not deducted immediately. Examples: new roof, HVAC system, full flooring.</div>
-                </div>
+                {step === 1 && <>
+                  <div style={S.helpTitle}>What type of expense?</div>
+                  <div style={S.helpRow}><div style={S.helpDot(acc)} /><div style={S.helpTxt}><strong style={{ color: "rgba(255,255,255,.9)" }}>Property expense</strong> &mdash; tied to a specific property. Goes on Schedule E and reduces taxable rental income. Examples: repairs, utilities, insurance.</div></div>
+                  <div style={S.helpRow}><div style={S.helpDot(rgba(acc, .6))} /><div style={S.helpTxt}><strong style={{ color: "rgba(255,255,255,.9)" }}>Business expense</strong> &mdash; the cost of running your PM business, not tied to one property. Examples: software, legal fees, CPA fees.</div></div>
+                  <div style={S.helpRow}><div style={S.helpDot(rgba(acc, .35))} /><div style={S.helpTxt}><strong style={{ color: "rgba(255,255,255,.9)" }}>Capital improvement</strong> &mdash; a major upgrade depreciated over years, not deducted immediately. Examples: new roof, HVAC system, full flooring.</div></div>
+                </>}
+                {step === 3 && <>
+                  <div style={S.helpTitle}>Picking a category</div>
+                  <div style={S.helpRow}><div style={S.helpDot(acc)} /><div style={S.helpTxt}>Categories map directly to IRS Schedule E lines for property expenses, or to your business P&amp;L. Pick the closest match — your CPA can re-map at year-end if needed.</div></div>
+                  <div style={S.helpRow}><div style={S.helpDot(rgba(acc, .6))} /><div style={S.helpTxt}>Same expense should always go in the same category so year-over-year totals stay comparable.</div></div>
+                </>}
+                {step === 4 && <>
+                  <div style={S.helpTitle}>Why a subcategory?</div>
+                  <div style={S.helpRow}><div style={S.helpDot(acc)} /><div style={S.helpTxt}>Subcategories let you drill into a category on reports (e.g. Insurance → Hazard vs Liability vs Flood). They don&apos;t change your taxes, just your visibility.</div></div>
+                  <div style={S.helpRow}><div style={S.helpDot(rgba(acc, .6))} /><div style={S.helpTxt}>Tap <strong style={{ color: "rgba(255,255,255,.9)" }}>Add subcategory</strong> if you need a new one. It&apos;ll be saved for next time.</div></div>
+                </>}
+                {step === 5 && <>
+                  <div style={S.helpTitle}>Why track vendors?</div>
+                  <div style={S.helpRow}><div style={S.helpDot(acc)} /><div style={S.helpTxt}>Any unincorporated vendor you pay <strong style={{ color: "rgba(255,255,255,.9)" }}>$600+ in a year</strong> needs a 1099-NEC from you by Jan 31. Tenantory tracks YTD totals and flags vendors crossing the threshold.</div></div>
+                  <div style={S.helpRow}><div style={S.helpDot(rgba(acc, .6))} /><div style={S.helpTxt}>Start typing a name to add a new vendor, or tap <strong style={{ color: "rgba(255,255,255,.9)" }}>Add vendor</strong> below the list.</div></div>
+                </>}
                 <button style={S.helpClose} onClick={() => setShowHelp(false)}>Got it</button>
               </motion.div>
             </motion.div>

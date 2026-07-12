@@ -1,6 +1,6 @@
 # Tenantory — Claude Code Context
 # Paste this into Claude Code at the start of every session.
-# Last updated: 2026-04-13
+# Last updated: 2026-04-13 (late evening — full mobile UI audit + fixes pass)
 
 ---
 
@@ -146,20 +146,33 @@ async function save(k, d) {
 app/admin/page.jsx                          ← ~13,000 lines, "use client"
 app/admin/components/LeaseModal.jsx         ← lease form, sign & send modals
 app/admin/components/TemplateEditor.jsx     ← lease template editor
+app/admin/components/ConfirmModal.jsx       ← reusable accessible destructive/unsaved-changes modal
+app/admin/components/EmptyState.jsx         ← reusable zero-data card with optional CTA
+app/admin/components/IntegrationsStatusCard.jsx ← read-only adapter status (Sifely/Stripe/Resend/etc.)
+app/admin/components/PwaInstallPrompt.jsx   ← Android beforeinstallprompt + iOS share-instruction hint
 app/lease/page.jsx                          ← tenant signing page (/lease?token=...)
 app/apply/page.jsx                          ← applicant apply page (~1,300 lines)
 app/page.jsx                                ← public site + pre-screen form
 app/portal/page.jsx                         ← tenant portal
+app/sign-in/[[...sign-in]]/page.jsx         ← Clerk sign-in
+app/sign-up/[[...sign-up]]/page.jsx         ← Clerk sign-up
 app/api/send-email/route.js                 ← Resend email API
-app/api/generate-lease-pdf/route.js         ← PDF generation (BROKEN — needs fix)
-app/api/cron/daily/route.js                 ← Vercel cron, runs 8am daily
+app/api/generate-lease-pdf/route.js         ← PDF gen (renderToBuffer, Node runtime, dual auth)
+app/api/cron/daily/route.js                 ← Vercel cron, 15 sections, runs 8am daily
 app/api/apply/route.js
 app/api/apply-confirm/route.js
 app/api/apply-notify/route.js
 app/api/invite/route.js
-app/api/portal-invite/route.js
+app/api/portal-invite/route.js              ← resilient pm_accounts auto-provision + Resend fail propagation
+app/api/webhooks/stripe/route.js            ← partial-payment-safe sum logic
+app/api/integrations/status/route.js        ← Clerk-gated boolean map of which integration env vars are set
 lib/syncTenant.js
-middleware.js                               ← auth middleware (pending)
+lib/theme.js                                ← resolveTheme(settings) + statusColor(status, settings)
+lib/leaseTemplate.js                        ← workspace-scoped resolver, seeds default if empty
+lib/integrations/smartLock/                 ← Sifely + manual fallback adapters
+lib/integrations/syndication/               ← Zillow + FurnishedFinder + Roomies push adapters
+lib/integrations/bgCheck/                   ← TransUnion SmartMove + RentPrep + manual adapters
+middleware.ts                               ← Clerk middleware on /admin(.*)
 ```
 
 ---
@@ -303,12 +316,14 @@ All features must be built with tier gating in mind. Check `settings.tier` befor
 
 ## REMAINING MANUAL STEPS (Harrison only — code is complete)
 
-1. **Create 3 Stripe Products/Prices** in Stripe Dashboard (Starter $97, Growth $197, Scale $397). Add `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_SCALE` env vars to Vercel.
-2. **Run workspace migration** for own data: hit `/api/migrate-workspace` with `{ workspaceId: clerkUserId }` to prefix existing bare keys.
-3. **Attorney review** of `/terms` and `/privacy` template pages before relying on them legally.
-4. **Tenantory domain** — pick and configure (currently everything is at rentblackbear.com).
-5. **Sifely API keys** when ready for smart-lock integration (door-code text storage works without it).
-6. **Set `settings.portalUrl`** in hq-settings so the lease boilerplate `{{PORTAL_URL}}` variable renders correctly (the lease template now uses this variable instead of a hardcoded domain).
+1. **Add Clerk API keys** to `.env.local` (placeholders already appended this session): `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`. Without these, `next build` fails on static gen of `/admin`. Get keys from https://dashboard.clerk.com → API keys.
+2. **Verify `CRON_SECRET`** is set in `.env.local` and on Vercel (cron handler fails-closed without it).
+3. **Create 3 Stripe Products/Prices** in Stripe Dashboard (Starter $97, Growth $197, Scale $397). Add `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_SCALE` env vars to Vercel.
+4. **Run workspace migration** for own data: hit `/api/migrate-workspace` with `{ workspaceId: clerkUserId }` to prefix existing bare keys.
+5. **Attorney review** of `/terms` and `/privacy` template pages before relying on them legally.
+6. **Tenantory domain** — pick and configure (currently everything is at rentblackbear.com).
+7. **Sifely API keys** when ready for smart-lock integration (door-code text storage works without it).
+8. **Set `settings.portalUrl`** in hq-settings so the lease boilerplate `{{PORTAL_URL}}` variable renders correctly.
 
 ---
 
@@ -345,11 +360,16 @@ cd ~/Desktop/rentblackbear && claude --dangerously-skip-permissions
 - Sidebar logo is settings-driven (no hardcoded brand)
 
 ### Mobile UX
-- **AddExpenseSheet** — full-screen 9-step expense flow (amount → type → property[multi-select] → category → subcat → vendor → date → note → review). Auto-advance on tap, scroll-wheel date picker, Schedule E categories, 1099 vendor flagging, `+` action button on bot-bar (replaces old Money tab), contextual FAB on Ledger tab only
-- **PWA manifest** — Add to Home Screen launches in standalone mode (no Chrome chrome). Manifest start_url = `/admin`
+- **AddExpenseSheet** — full-screen 9-step expense flow with auto-advance (steps 1/3/4/5), sticky `+Add` rows, ? help on type/category/subcat/vendor, swipe-down-to-dismiss, haptic feedback (`navigator.vibrate`), unsaved-changes guard, recurring toggle on Review with 6 frequency presets + Custom (count + days/weeks/months/years unit picker)
+- **PWA**: manifest rebranded to Tenantory, SVG icon at `/public/icon.svg`, install prompt component shows Android one-tap install or iOS share-instruction hint, dismissible with 30-day cooldown
+- **next/font**: Plus_Jakarta_Sans + DM_Serif_Display loaded via `next/font/google` for zero-CLS. Exposed as CSS vars `--font-jakarta` and `--font-dm-serif`
+- **Mobile breakpoints**: 768px (tablet), 420px (small phone), 380px (tight iPhone — SE/12 mini)
+- **Safe-area insets**: `env(safe-area-inset-top)` on `.side` and `.mob-header`, `env(safe-area-inset-bottom)` on `.bot-bar` and PwaInstallPrompt
+- **100dvh everywhere** (no remaining 100vh in admin/portal/apply)
 - Bot-bar configurable via Theme tab. Default tabs: Dashboard | Tenants | + Expense | Ledger | More
 - Body scroll lock when sheets are open
-- Framer Motion animations: spring slide-up sheets, fade+scale modals, tenant profile slide-in, shake error wiggle, FAB tap+hover springs
+- Framer Motion animations: spring slide-up sheets with drag-to-dismiss, fade+scale modals, tenant profile slide-in, shake error wiggle, FAB tap+hover springs
+- Hover-on-touch neutralized via umbrella `@media (hover: none)` reset
 
 ### Public site (`app/page.jsx`)
 - Listings with per-room photo carousels
@@ -367,11 +387,13 @@ cd ~/Desktop/rentblackbear && claude --dangerously-skip-permissions
 - Dashboard, balance, payment history, **Stripe online payments** (with webhook reconciliation), **autopay enrollment** (with retry on failure), **lease PDF download** (dual-auth: Clerk admin OR Supabase portal session), maintenance submission, document downloads
 - Settings: language, notification prefs, autopay management
 
-### Cron (`app/api/cron/daily/route.js` — 14 sections)
+### Cron (`app/api/cron/daily/route.js` — 16 sections)
 1. Rent charge auto-generation (monthly, 1st)
 2. Late fees (initial + daily accrual + cap, dedup by linkedChargeId)
 3. Auto-clear reminderActive when paid
-4. Daily reminders
+4. Daily reminders (admin-toggled via `reminderActive`)
+4a. **Recurring expense auto-post** — reads `expense.recurring.nextDate`, creates child row with proper calendar arithmetic (weekly/biweekly/monthly/quarterly/yearly/custom days|weeks|months|years), advances parent idempotently
+4b. **Due-date rent reminders** (automatic, dedup via `charge.reminderLog[]`): day-before, due-day, day-1-late, day-2-late. Settings-driven late-fee day.
 5. Lease expiry alerts (90/30/7d)
 5b. **Lease renewal prompt** (60-90d before expiry, fires once per lease)
 6. M2M auto-escalation
@@ -391,9 +413,17 @@ cd ~/Desktop/rentblackbear && claude --dangerously-skip-permissions
 - **Stripe subscription billing**: `/api/subscription` route (checkout + portal), 5 webhook handlers, `lib/tierCheck.js`, SubscriptionCard in PMSettings
 - **Stripe Connect**: `/api/connect` route, payment routing via `transfer_data.destination`, configurable platform fee, account.updated webhook
 - **Feature flags + tier gating**: `lib/features.js` (FEATURE_TIERS map), `<TierGate>` component
-- **Brand-clean**: 29 files, ~140 hardcoded "Black Bear"/"Carolina"/emoji bear references removed. All settings-driven now
+- **Theme system v2**: `lib/theme.js` — `resolveTheme(settings)` returns {accent, danger, success, gold, warn, muted, info, font, zoom}. New `settings.themeDanger/themeSuccess/themeGold/themeWarn/themeMuted/themeInfo` keys with sane defaults. Used by DashboardTab, Reports, AccountingTab, PortalOpsTab, QuickAddPayment, QuickAddExpense
+- **Lease template resolver**: `lib/leaseTemplate.js` queries workspace_id=is.null lease_templates, seeds a default placeholder if empty, falls back to legacy UUID on network failure
+- **Integration adapter packages** (drop-in when creds arrive):
+  - `lib/integrations/smartLock/` — Sifely (TTLock-based REST) + manual notification mode
+  - `lib/integrations/syndication/` — Zillow + FurnishedFinder + Roomies push connectors
+  - `lib/integrations/bgCheck/` — TransUnion SmartMove + RentPrep + manual mode
+  - All follow `getXAdapter()` dispatcher pattern that returns the active adapter based on configured env vars; manual fallback for every channel
+- **Brand-clean**: 29 files, ~140 hardcoded "Black Bear"/"Carolina"/emoji references removed. All settings-driven now. 93 emoji stripped across admin components in 2026-04-13 audit pass
 - **Observability**: `lib/logger.js` structured JSON logs, `app/admin/error.jsx` error boundary
-- **Security**: Clerk on `/admin/*`, 16+ API route gates, crypto.randomUUID for auth tokens, ownership checks on tenant-portal Stripe routes, anon key in env (never hardcoded)
+- **Charges freshness**: admin polls `hq-charges` on tab focus + every 60s while visible (workaround until Supabase realtime channel lands)
+- **Security**: Clerk on `/admin/*`, 16+ API route gates, crypto.randomUUID for auth tokens, ownership checks on tenant-portal Stripe routes, anon key in env (never hardcoded), portal-invite auto-provisions pm_accounts with column-missing fallback
 
 ---
 

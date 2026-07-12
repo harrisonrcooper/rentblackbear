@@ -108,7 +108,7 @@ export default function PortalPreview({
         <div style={{ display: "flex", gap: 8 }}>
           {[["Lease Signed", ob.leaseSigned], ["Security Deposit", ob.sdPaid], ["First Month Rent", ob.firstMonthPaid], ["Move In", ob.leaseSigned && ob.sdPaid && ob.firstMonthPaid]].map(([label, done]) => (
             <div key={label} style={{ flex: 1, textAlign: "center", padding: "8px 6px", borderRadius: 8, background: done ? "rgba(74,124,89,.08)" : "rgba(0,0,0,.04)", border: done ? "1px solid rgba(74,124,89,.2)" : "1px solid transparent" }}>
-              <div style={{ fontSize: 16, marginBottom: 4 }}>{done ? "✓" : ""}</div>
+              <div style={{ fontSize: 16, marginBottom: 4, display:"flex", justifyContent:"center", alignItems:"center", minHeight: 16 }}>{done ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> : null}</div>
               <div style={{ fontSize: 10, fontWeight: 700, color: done ? "#4a7c59" : "#aaa" }}>{label}</div>
             </div>
           ))}
@@ -307,7 +307,7 @@ export default function PortalPreview({
             </div>
             <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
               {[["Lease", ob.leaseSigned], ["SD", ob.sdPaid], ["Rent", ob.firstMonthPaid]].map(([label, done]) => (
-                <span key={label} style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: done ? "rgba(74,124,89,.12)" : "rgba(0,0,0,.06)", color: done ? "#4a7c59" : "#aaa" }}>{done ? "✓ " : ""}{label}</span>
+                <span key={label} style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: done ? "rgba(74,124,89,.12)" : "rgba(0,0,0,.06)", color: done ? "#4a7c59" : "#aaa", display:"inline-flex", alignItems:"center", gap:3 }}>{done ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> : null}{label}</span>
               ))}
             </div>
             <span style={{ fontSize: 10, color: "#4a7c59", fontWeight: 600, marginLeft: 4 }}>Preview →</span>

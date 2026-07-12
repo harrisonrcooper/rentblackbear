@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import ConfirmModal from "./ConfirmModal";
+import SyndicationPushButton from "./SyndicationPushButton";
 
 // ── Storage ──────────────────────────────────────────────────────────
 const SUPA_URL=process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -59,6 +61,10 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
   const[saturation,setSaturation]=useState(100);
   const[rotation,setRotation]=useState(0);
   const[rotInput,setRotInput]=useState("0");
+  const[confirmClose,setConfirmClose]=useState(false);
+  // Dirty when any adjustment differs from the initial render.
+  const isDirty=()=>brightness!==100||contrast!==100||saturation!==100||rotation!==0;
+  const tryClose=()=>{if(isDirty())setConfirmClose(true);else onClose();};
   const[flipH,setFlipH]=useState(false);
   const[flipV,setFlipV]=useState(false);
   const[cropX,setCropX]=useState(0);
@@ -286,10 +292,10 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
       onMouseOut={e=>{if(!active){e.currentTarget.style.background="#fff";}}}>{label}</button>
   );
 
-  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:1000,padding:20}}>
+  return(<><div className="mbg" onClick={tryClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:1000,padding:20}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-      <div><h2 style={{marginBottom:2}}>✏️ Photo Editor</h2>
-        <div style={{fontSize:10,color:"#6b5e52"}}>Drag on photo to crop · Drag handles to resize · Drag inside box to move{aspectLock&&<span style={{marginLeft:8,background:"rgba(212,168,83,.12)",color:"#9a7422",fontWeight:700,padding:"1px 7px",borderRadius:4,fontSize:9}}>🔒 {aspectLock} locked — card preview ratio</span>}</div>
+      <div><h2 style={{marginBottom:2,display:"inline-flex",alignItems:"center",gap:8}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Photo Editor</h2>
+        <div style={{fontSize:10,color:"#6b5e52"}}>Drag on photo to crop · Drag handles to resize · Drag inside box to move{aspectLock&&<span style={{marginLeft:8,background:"rgba(212,168,83,.12)",color:"#9a7422",fontWeight:700,padding:"1px 7px",borderRadius:4,fontSize:9,display:"inline-flex",alignItems:"center",gap:4}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>{aspectLock} locked — card preview ratio</span>}</div>
       </div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <button onClick={()=>setShowGrid(g=>!g)} style={{padding:"5px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:showGrid?"#d4a853":"#fff",color:showGrid?"#1a1714":"#5c4a3a",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>⊞ Grid {showGrid?"ON":"OFF"}</button>
@@ -365,10 +371,12 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
     </div>
 
     <div className="mft" style={{marginTop:14}}>
-      <button className="btn btn-out" onClick={onClose}>Cancel</button>
-      <button className="btn btn-gold" onClick={applyAndSave} disabled={saving} style={{minWidth:140}}>{saving?"⏳ Saving...":"✓ Apply & Save"}</button>
+      <button className="btn btn-out" onClick={tryClose}>Cancel</button>
+      <button className="btn btn-gold" onClick={applyAndSave} disabled={saving} style={{minWidth:140,display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6}}>{saving?<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M5 2h14"/><path d="M5 22h14"/><path d="M5 2v4a7 7 0 0 0 14 0V2"/><path d="M5 22v-4a7 7 0 0 1 14 0v4"/></svg>Saving...</>:<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Apply & Save</>}</button>
     </div>
-  </div></div>);
+  </div></div>
+  <ConfirmModal open={confirmClose} title="Discard photo edits?" message="Brightness, contrast, rotation, or crop changes haven't been saved. Close without applying?" confirmLabel="Discard" cancelLabel="Keep editing" destructive={false} onConfirm={()=>{setConfirmClose(false);onClose();}} onCancel={()=>setConfirmClose(false)}/>
+  </>);
 }
 
 // ─── Photo Manager ──────────────────────────────────────────────────
@@ -445,7 +453,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
       <label style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.3}}>{label} ({ph.length} photo{ph.length!==1?"s":""})</label>
       {ph.length>0&&<div style={{display:"flex",alignItems:"center",gap:6}}>
-        <span style={{fontSize:9,color:"#7a7067"}}>🔍</span>
+        <span aria-hidden="true" style={{color:"#7a7067",display:"inline-flex"}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
         <input type="range" min={60} max={200} step={10} value={thumbSize} onChange={e=>setThumbSize(Number(e.target.value))}
           style={{width:64,accentColor:"#d4a853",cursor:"pointer"}} title="Thumbnail size"/>
         <span style={{fontSize:9,color:"#7a7067"}}>drag to reorder</span>
@@ -455,11 +463,11 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
       <div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #d4a853",borderTopColor:"transparent",animation:"spin .6s linear infinite"}}/>
       Loading {readingCount} photo{readingCount!==1?"s":""}…
     </div>}
-    {!readingCount&&ph.length>0&&<div style={{marginBottom:6,padding:"4px 10px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6,fontSize:10,color:"#4a7c59",fontWeight:600}}>
-      ✓ {ph.length} photo{ph.length!==1?"s":""} ready — click Save to apply
+    {!readingCount&&ph.length>0&&<div style={{marginBottom:6,padding:"4px 10px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6,fontSize:10,color:"#4a7c59",fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>{ph.length} photo{ph.length!==1?"s":""} ready — click Save to apply
     </div>}
-    {uploadError&&<div style={{marginBottom:6,padding:"6px 10px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:6,fontSize:10,color:"#c45c4a",fontWeight:600}}>
-      ⚠ {uploadError}
+    {uploadError&&<div style={{marginBottom:6,padding:"6px 10px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:6,fontSize:10,color:"#c45c4a",fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>{uploadError}
     </div>}
 
     {ph.length>0&&<div style={{display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${thumbSize}px,1fr))`,gap:6,marginBottom:8}}>
@@ -479,8 +487,8 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
             transition:"border-color .1s,opacity .1s",
           }}>
           {i===0&&<div style={{position:"absolute",top:3,left:3,background:"#d4a853",color:"#1a1714",fontSize:7,fontWeight:800,padding:"1px 5px",borderRadius:3,zIndex:3,pointerEvents:"none"}}>COVER</div>}
-          <div style={{position:"absolute",bottom:3,left:3,background:"rgba(212,168,83,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer"}} onClick={e=>{e.stopPropagation();e.preventDefault();setEditingPhoto({index:i,src});}}>✏ Edit</div>
-          {i===0&&<div style={{position:"absolute",top:3,right:22,background:"rgba(0,0,0,.65)",color:"#fff",fontSize:7,fontWeight:800,padding:"2px 5px",borderRadius:3,zIndex:3,cursor:"crosshair",userSelect:"none"}} title="Click to set focal point — controls how photo is cropped in cards" onClick={e=>{e.stopPropagation();setPickingFocal(true);}} >🎯</div>}
+          <div style={{position:"absolute",bottom:3,left:3,background:"rgba(212,168,83,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:3}} onClick={e=>{e.stopPropagation();e.preventDefault();setEditingPhoto({index:i,src});}}><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Edit</div>
+          {i===0&&<div aria-label="Set focal point" style={{position:"absolute",top:3,right:22,background:"rgba(0,0,0,.65)",color:"#fff",padding:"2px 5px",borderRadius:3,zIndex:3,cursor:"crosshair",userSelect:"none",display:"inline-flex",alignItems:"center"}} title="Click to set focal point — controls how photo is cropped in cards" onClick={e=>{e.stopPropagation();setPickingFocal(true);}} ><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="3" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="3" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="21" y2="12"/></svg></div>}
           {i===0&&pickingFocal&&<div style={{position:"absolute",inset:0,zIndex:4,cursor:"crosshair",background:"rgba(0,0,0,.35)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>{e.stopPropagation();const rect=e.currentTarget.getBoundingClientRect();const x=Math.round((e.clientX-rect.left)/rect.width*100);const y=Math.round((e.clientY-rect.top)/rect.height*100);onFocalPoint&&onFocalPoint(x,y);setPickingFocal(false);}}>
             <div style={{color:"#fff",fontSize:10,fontWeight:700,textAlign:"center",pointerEvents:"none",textShadow:"0 1px 3px rgba(0,0,0,.8)"}}>Click to set focal point<br/><span style={{fontSize:8,fontWeight:400,opacity:.8}}>Press ESC to cancel</span></div>
           </div>}
@@ -500,7 +508,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
       onDrop={handleDrop}
       onClick={openPicker}
       style={{border:`2px dashed ${dropOver?"#d4a853":"rgba(0,0,0,.08)"}`,borderRadius:8,padding:18,textAlign:"center",cursor:"pointer",background:dropOver?"rgba(212,168,83,.04)":"transparent",marginBottom:6,transition:"all .15s"}}>
-      <div style={{fontSize:22,marginBottom:4}}>📷</div>
+      <div style={{marginBottom:4,color:"#6b5e52",display:"flex",justifyContent:"center"}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
       <div style={{fontSize:11,color:"#6b5e52",fontWeight:600}}>Drop photos here or click to browse</div>
       <div style={{fontSize:9,color:"#7a7067",marginTop:2}}>Select multiple files at once — no limit</div>
     </div>}
@@ -523,6 +531,9 @@ function UtilTemplatesModal({settings,onUpdateSettings,onClose,showConfirm}){
   const templates=getUtilTemplates(settings);
   const[editingId,setEditingId]=useState(null);
   const[draftT,setDraftT]=useState(null);
+  const[confirmClose,setConfirmClose]=useState(false);
+  // Dirty if a draft template is open — closing would lose in-progress edits.
+  const tryClose=()=>{if(editingId&&draftT)setConfirmClose(true);else onClose();};
   const saveTemplate=(t)=>{
     const existing=templates.find(x=>x.id===t.id);
     const updated=existing?templates.map(x=>x.id===t.id?t:x):[...templates,t];
@@ -536,7 +547,7 @@ function UtilTemplatesModal({settings,onUpdateSettings,onClose,showConfirm}){
     const t={id:uid(),name:"New Template",key:"custom_"+uid().slice(0,4),desc:"",clause:""};
     setDraftT(t);setEditingId(t.id);
   };
-  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760}}>
+  return(<><div className="mbg" onClick={tryClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760}}>
     <h2 style={{marginBottom:4}}>Utility Templates</h2>
     <p style={{fontSize:11,color:"#6b5e52",marginBottom:16}}>These templates appear in the Utilities dropdown when editing unit settings. Each template has a name, short description, and full lease clause.</p>
     {templates.map(t=>(
@@ -552,7 +563,7 @@ function UtilTemplatesModal({settings,onUpdateSettings,onClose,showConfirm}){
               <textarea value={draftT.clause} onChange={e=>setDraftT(x=>({...x,clause:e.target.value}))} rows={4} placeholder="Full clause text inserted into the lease document..." style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.5}}/>
             </div>
             <div style={{display:"flex",gap:6,marginTop:6}}>
-              <button className="btn btn-green btn-sm" onClick={()=>saveTemplate(draftT)}>✓ Save Template</button>
+              <button className="btn btn-green btn-sm" onClick={()=>saveTemplate(draftT)} style={{display:"inline-flex",alignItems:"center",gap:4}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Save Template</button>
               <button className="btn btn-out btn-sm" onClick={()=>{setEditingId(null);setDraftT(null);}}>Cancel</button>
             </div>
           </div>
@@ -567,14 +578,16 @@ function UtilTemplatesModal({settings,onUpdateSettings,onClose,showConfirm}){
             </div>
             <div style={{display:"flex",gap:4,flexShrink:0}}>
               <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>{setDraftT({...t});setEditingId(t.id);}}>Edit</button>
-              <button className="btn btn-red btn-sm" style={{fontSize:9}} onClick={()=>deleteTemplate(t.id)}>✕</button>
+              <button aria-label="Delete template" className="btn btn-red btn-sm" style={{fontSize:9,display:"inline-flex",alignItems:"center",justifyContent:"center"}} onClick={()=>deleteTemplate(t.id)}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
           </div>}
       </div>
     ))}
     <button className="btn btn-gold btn-sm" style={{marginTop:4,width:"100%"}} onClick={startNew}>+ Add New Template</button>
-    <div className="mft" style={{marginTop:12}}><button className="btn btn-green" onClick={onClose}>Done</button></div>
-  </div></div>);
+    <div className="mft" style={{marginTop:12}}><button className="btn btn-green" onClick={tryClose}>Done</button></div>
+  </div></div>
+  <ConfirmModal open={confirmClose} title="Discard template draft?" message="You have an unsaved template draft open. Close without saving it?" confirmLabel="Discard" cancelLabel="Keep editing" destructive={false} onConfirm={()=>{setConfirmClose(false);onClose();}} onCancel={()=>setConfirmClose(false)}/>
+  </>);
 }
 
 // ─── Tour Scene Manager ─────────────────────────────────────────────
@@ -633,7 +646,7 @@ function TourSceneManager({tourFolder,scenes,onChange,showAlert}){
           3D Tour Scenes ({scenes.length} scene{scenes.length!==1?"s":""})
         </label>
         {scenes.length>0&&<div style={{display:"flex",alignItems:"center",gap:6}}>
-          <span style={{fontSize:9,color:"#7a7067"}}>🔍</span>
+          <span aria-hidden="true" style={{color:"#7a7067",display:"inline-flex"}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
           <input type="range" min={60} max={200} step={10} value={thumbSize} onChange={e=>setThumbSize(Number(e.target.value))}
             style={{width:64,accentColor:"#d4a853",cursor:"pointer"}} title="Thumbnail size"/>
           <span style={{fontSize:9,color:"#7a7067"}}>drag to reorder</span>
@@ -690,9 +703,9 @@ function TourSceneManager({tourFolder,scenes,onChange,showAlert}){
             <div style={{position:"absolute",top:3,left:3,background:"rgba(0,0,0,.65)",color:"#fff",fontSize:7,fontWeight:800,padding:"1px 5px",borderRadius:3,zIndex:3,pointerEvents:"none"}}>
               F{s.floor||1}
             </div>
-            <div style={{position:"absolute",bottom:3,left:3,background:"rgba(212,168,83,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer"}}
+            <div style={{position:"absolute",bottom:3,left:3,background:"rgba(212,168,83,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:3}}
               onClick={e=>{e.stopPropagation();setEditingScene(editingScene===s.id?null:s.id);}}>
-              ✏ Edit
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Edit
             </div>
             <img src={thumbURL(s.file)} alt={s.label}
               style={{width:"100%",height:"100%",objectFit:"cover",display:"block",pointerEvents:"none"}}
@@ -718,7 +731,7 @@ function TourSceneManager({tourFolder,scenes,onChange,showAlert}){
 
       {scenes.length===0&&<div style={{border:"2px dashed rgba(0,0,0,.08)",borderRadius:8,padding:18,textAlign:"center",cursor:"pointer",marginBottom:6}}
         onClick={()=>{setShowFileBrowser(true);if(!tourFiles.length)loadBucketFiles();}}>
-        <div style={{fontSize:22,marginBottom:4}}>🎥</div>
+        <div style={{marginBottom:4,color:"#6b5e52",display:"flex",justifyContent:"center"}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></div>
         <div style={{fontSize:11,color:"#6b5e52",fontWeight:600}}>No scenes yet — click to browse bucket files</div>
         <div style={{fontSize:9,color:"#7a7067",marginTop:2}}>Or add manually below</div>
       </div>}
@@ -769,7 +782,7 @@ function TourSceneManager({tourFolder,scenes,onChange,showAlert}){
                 <img src={thumbURL(file)} alt={file} style={{width:"100%",aspectRatio:"16/9",objectFit:"cover",display:"block"}}/>
                 <div style={{fontSize:7,padding:"2px 4px",background:"rgba(0,0,0,.65)",color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file}</div>
                 {already&&<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.45)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:700}}>Added</div>}
-                {sel&&!already&&<div style={{position:"absolute",top:3,right:3,width:16,height:16,background:"#d4a853",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#1a1714",fontWeight:900}}>✓</div>}
+                {sel&&!already&&<div style={{position:"absolute",top:3,right:3,width:16,height:16,background:"#d4a853",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"#1a1714"}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>}
               </div>
             );
           })}
@@ -816,6 +829,10 @@ function LeasePricingModal({room,onSave,onClose}){
     :DEFAULT_DURATIONS.map(m=>({id:String(m),months:m,price:calcAutoPrice(baseRent,m),override:false,enabled:m>=6}));
   const[tiers,setTiers]=useState(initTiers);
   const[newMonths,setNewMonths]=useState("");
+  const[confirmClose,setConfirmClose]=useState(false);
+  // Dirty if tiers differ from initial OR a partial add is in progress.
+  const isDirty=()=>JSON.stringify(tiers)!==JSON.stringify(initTiers)||!!newMonths;
+  const tryClose=()=>{if(isDirty())setConfirmClose(true);else onClose();};
   const updTier=(id,key,val)=>setTiers(t=>t.map(x=>x.id===id?{...x,[key]:val}:x));
   const removeTier=(id)=>setTiers(t=>t.filter(x=>x.id!==id));
   const addTier=()=>{
@@ -825,8 +842,8 @@ function LeasePricingModal({room,onSave,onClose}){
     setTiers(t=>[...t,{id:String(m),months:m,price:calcAutoPrice(baseRent,m),override:false,enabled:true}].sort((a,b)=>a.months-b.months));
     setNewMonths("");
   };
-  return(
-    <div className="mbg" style={{zIndex:200}} onClick={onClose}>
+  return(<>
+    <div className="mbg" style={{zIndex:200}} onClick={tryClose}>
       <div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:500}}>
         <h2>Edit Lease Pricing — {room.name}</h2>
         <div style={{fontSize:11,color:"#5c4a3a",marginBottom:14,padding:"8px 12px",background:"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid rgba(212,168,83,.15)"}}>
@@ -872,12 +889,13 @@ function LeasePricingModal({room,onSave,onClose}){
           }}>Reset to Defaults</button>
         </div>
         <div className="mft" style={{marginTop:16}}>
-          <button className="btn btn-out" onClick={onClose}>Cancel</button>
+          <button className="btn btn-out" onClick={tryClose}>Cancel</button>
           <button className="btn btn-gold" onClick={()=>{onSave(tiers);onClose();}}>Save Pricing</button>
         </div>
       </div>
     </div>
-  );
+    <ConfirmModal open={confirmClose} title="Discard pricing changes?" message="Term adjustments aren't saved yet. Close without saving?" confirmLabel="Discard" cancelLabel="Keep editing" destructive={false} onConfirm={()=>{setConfirmClose(false);onClose();}} onCancel={()=>setConfirmClose(false)}/>
+  </>);
 }
 
 // ─── Add Existing Tenant Modal ──────────────────────────────────────
@@ -892,6 +910,12 @@ function AddExistingTenantModal({room,propName,onSave,onClose}){
   });
   const[errs,setErrs]=useState({});
   const[shake,setShake]=useState(false);
+  const[confirmClose,setConfirmClose]=useState(false);
+  // Dirty if user filled in name/email/phone/notes/doorCode/leaseEnd or chose
+  // an occupation/gender — initial form has rent/moveIn pre-populated, those
+  // alone don't count as edits.
+  const isDirty=()=>!!(form.name||form.email||form.phone||form.notes||form.doorCode||form.leaseEnd||form.occupationType||form.gender);
+  const tryClose=()=>{if(isDirty())setConfirmClose(true);else onClose();};
   const fmtPhone=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(!d.length)return"";if(d.length<=3)return"("+d;if(d.length<=6)return"("+d.slice(0,3)+") "+d.slice(3);return"("+d.slice(0,3)+") "+d.slice(3,6)+"-"+d.slice(6);};
   const validate=()=>{
     const e={};
@@ -918,6 +942,21 @@ function AddExistingTenantModal({room,propName,onSave,onClose}){
       le:form.leaseEnd,
       st:"occupied",
     });
+    // Fire smart-lock set-code in the background. Manual adapter just posts a
+    // notification; Sifely pushes the code to the lock. Failure doesn't block
+    // tenant save — caller already has the door code in their records.
+    if(form.doorCode&&room?.id){
+      fetch("/api/smartlock/set-code",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          roomId:room.id,
+          sifelyLockId:room.sifelyLockId||null,
+          code:form.doorCode,
+          label:`${form.name.trim()} — ${room.name||"room"}`,
+        }),
+      }).catch(()=>{});
+    }
   };
   const fld=(key,label,type="text",placeholder="")=>(
     <div className="fld" style={{marginBottom:8}}>
@@ -932,8 +971,8 @@ function AddExistingTenantModal({room,propName,onSave,onClose}){
         }}/>
     </div>
   );
-  return(
-  <div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520,animation:shake?"shake .4s ease":undefined}}>
+  return(<>
+  <div className="mbg" onClick={tryClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520,animation:shake?"shake .4s ease":undefined}}>
     <h2 style={{marginBottom:4}}>Add Existing Tenant</h2>
     <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>
       Adding tenant to <strong>{room.name}</strong> at <strong>{propName}</strong>. This will mark the room as occupied immediately.
@@ -1004,11 +1043,21 @@ function AddExistingTenantModal({room,propName,onSave,onClose}){
     </div>
 
     <div className="mft">
-      <button className="btn btn-out" onClick={onClose}>Cancel</button>
+      <button className="btn btn-out" onClick={tryClose}>Cancel</button>
       <button className="btn btn-green" onClick={submit}>Add Tenant → Mark Occupied</button>
     </div>
   </div></div>
-  );
+  <ConfirmModal
+    open={confirmClose}
+    title="Leave without saving?"
+    message="The tenant info you entered won't be saved. Discard and close?"
+    confirmLabel="Discard"
+    cancelLabel="Keep editing"
+    destructive={false}
+    onConfirm={()=>{setConfirmClose(false);onClose();}}
+    onCancel={()=>setConfirmClose(false)}
+  />
+  </>);
 }
 
 // ─── PropEditor ─────────────────────────────────────────────────────
@@ -1165,6 +1214,33 @@ export default function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTen
     <div className="fr" style={{alignItems:"flex-end"}}>
       <div className="fld"><label>Property Address</label><input value={p.addr||""} onChange={e=>updP({...p,addr:e.target.value})} placeholder="123 Main St, Huntsville AL 35816"/></div>
     </div>
+    {/* Listing syndication — renders only when at least one channel is configured */}
+    {!isNew && <SyndicationPushButton settings={settings} listing={{
+      id: p.id,
+      name: p.name || p.addr,
+      addr: p.addr,
+      city: settings?.city?.split(",")[0] || "",
+      state: settings?.city?.split(",")[1]?.trim()?.split(" ")[0] || "",
+      zip: p.zip || "",
+      beds: (p.units||[]).reduce((s,u)=>s+(u.rooms?.length||0),0),
+      baths: p.baths || null,
+      sqft: p.sqft || null,
+      rent: (p.units||[])[0]?.rooms?.[0]?.rent || null,
+      deposit: null,
+      furnished: true,
+      utilitiesIncluded: true,
+      availableFrom: null,
+      description: p.description || "",
+      amenities: p.amenities || [],
+      photos: (p.photos||[]).map(ph => ({ url: ph.url || ph, caption: ph.caption || "" })),
+      pmName: settings?.pmName || "",
+      pmEmail: settings?.email || "",
+      pmPhone: settings?.phone || "",
+      totalBedrooms: (p.units||[]).reduce((s,u)=>s+(u.rooms?.length||0),0),
+      availableBedrooms: (p.units||[]).reduce((s,u)=>s+(u.rooms||[]).filter(r=>r.st==="vacant").length,0),
+      leaseTerms: "12-month",
+      houseRules: [],
+    }}/>}
     <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:10,marginBottom:10}}>
       <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Map Pin Location</div>
       <div className="fr3">
@@ -1183,7 +1259,7 @@ export default function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTen
         <div className="fld" style={{marginBottom:0}}>
           <label style={{visibility:"hidden"}}>.</label>
           {p.lat&&p.lng
-            ?<div style={{fontSize:9,color:_grn,padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:6,border:"1px solid rgba(74,124,89,.15)",height:"100%",display:"flex",alignItems:"center"}}>✓ Pin set · saves with property</div>
+            ?<div style={{fontSize:9,color:_grn,padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:6,border:"1px solid rgba(74,124,89,.15)",height:"100%",display:"flex",alignItems:"center",gap:4}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Pin set · saves with property</div>
             :<div style={{fontSize:9,color:_red,padding:"8px 10px",background:"rgba(196,92,74,.04)",borderRadius:6,border:"1px solid rgba(196,92,74,.15)"}}>
               No pin yet — Save to auto-geocode, or paste coords from{" "}
               <a href={`https://www.google.com/maps/search/${encodeURIComponent((p.addr||"")+" Huntsville AL")}`} target="_blank" rel="noopener" style={{color:_acc}}>Google Maps</a>
@@ -1290,7 +1366,7 @@ export default function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTen
         <div className="fld">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
             <label style={{marginBottom:0}}>Utilities</label>
-            <button type="button" onClick={()=>setShowUtilModal(true)} style={{fontSize:9,color:_acc,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600}}>✏ Draft Email Settings</button>
+            <button type="button" onClick={()=>setShowUtilModal(true)} style={{fontSize:9,color:_acc,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600,display:"inline-flex",alignItems:"center",gap:4}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Draft Email Settings</button>
           </div>
           <select value={curUnit.utils||"allIncluded"} onChange={e=>updUnit("utils",e.target.value)}>
             {getUtilTemplates(settings).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
@@ -1319,7 +1395,7 @@ export default function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTen
         {(curUnit.rooms||[]).length===0&&<div style={{padding:"12px",textAlign:"center",color:"#6b5e52",fontSize:12,border:"2px dashed rgba(0,0,0,.06)",borderRadius:8}}>No rooms yet — click Add Room</div>}
         {(curUnit.rooms||[]).map((r,i)=>{const locked=isOcc(r);return(
           <div key={r.id} style={{padding:12,border:`1px solid ${locked?"rgba(0,0,0,.06)":"rgba(0,0,0,.05)"}`,borderRadius:8,marginBottom:8,background:locked?"#f0efec":"#faf9f7",position:"relative"}}>
-            {locked&&<div style={{position:"absolute",top:6,right:8}}><span className="badge b-green" style={{fontSize:8}}>🔗 {r.tenant.name}</span></div>}
+            {locked&&<div style={{position:"absolute",top:6,right:8}}><span className="badge b-green" style={{fontSize:8,display:"inline-flex",alignItems:"center",gap:3}}><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>{r.tenant.name}</span></div>}
             <div className="fr3">
               <div className="fld"><label>Name</label><input value={r.name} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"name",e.target.value)}/></div>
               <div className="fld">
@@ -1327,7 +1403,7 @@ export default function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTen
                 <input type="number" value={r.rent} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"rent",e.target.value)}/>
                 {!locked&&<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#9a7422",borderColor:"rgba(212,168,83,.3)",marginTop:4,width:"100%"}}
                   onClick={()=>setLeasePricingRoom({room:r,idx:i})}>
-                  💰 Lease Pricing {(r.leaseTiers&&r.leaseTiers.length>0)?"("+r.leaseTiers.filter(t=>t.enabled).length+" tiers)":"(set up)"}
+                  <span style={{display:"inline-flex",alignItems:"center",gap:4}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Lease Pricing {(r.leaseTiers&&r.leaseTiers.length>0)?"("+r.leaseTiers.filter(t=>t.enabled).length+" tiers)":"(set up)"}</span>
                 </button>}
               </div>
               <div className="fld"><label>Bath</label><select value={String(r.pb)} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"pb",e.target.value)}><option value="true">Private</option><option value="false">Shared</option></select></div>
@@ -1340,7 +1416,7 @@ export default function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTen
             <div className="fr3">
               <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:r.ownerOccupied?"rgba(59,130,246,.06)":locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:r.ownerOccupied?_acc:locked?_grn:_red,fontWeight:600}}>{r.ownerOccupied?"Owner Occupied":locked?("Occupied — "+(r.tenant.name)):"Vacant"}</div></div>
               <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#6b5e52"}}>{r.le?fmtD(r.le):"—"}</div></div>
-              <div className="fld"><label>Furnished</label><select value={String(r.furnished!==false)} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"furnished",e.target.value==="true")}><option value="true">✓ Furnished</option><option value="false">Unfurnished</option></select></div>
+              <div className="fld"><label>Furnished</label><select value={String(r.furnished!==false)} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"furnished",e.target.value==="true")}><option value="true">Furnished</option><option value="false">Unfurnished</option></select></div>
             </div>
             <div style={{marginBottom:8}}>
               <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",fontSize:11,fontWeight:600,color:r.ownerOccupied?_acc:"#5c4a3a",padding:"7px 10px",borderRadius:7,border:"1px solid "+(r.ownerOccupied?"rgba(59,130,246,.3)":"rgba(0,0,0,.06)"),background:r.ownerOccupied?"rgba(59,130,246,.04)":"transparent"}}>
@@ -1361,7 +1437,7 @@ export default function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTen
               </div>
               {!locked&&(curUnit?.rooms||[]).length>1&&<button className="btn btn-out btn-sm" style={{fontSize:9,whiteSpace:"nowrap",marginBottom:1}} title="Apply this room's utility setting to all rooms in this unit"
                 onClick={()=>{const utils=r.utils||curUnit?.utils||"allIncluded";const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).map(rm=>({...rm,utils}))}:u);updP({...p,units});}}>
-                ⚡ Apply to all rooms in {curUnit?.name||"this unit"}
+                <span style={{display:"inline-flex",alignItems:"center",gap:4}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Apply to all rooms in {curUnit?.name||"this unit"}</span>
               </button>}
             </div>
             {!locked&&<div className="fld">
@@ -1387,7 +1463,7 @@ export default function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTen
               {locked&&<button className="btn btn-gold btn-sm" onClick={()=>{
                 onSave(p);
                 setTimeout(()=>{if(onViewTenant)onViewTenant(r,p.name,p.id);},150);
-              }}>📄 Manage Lease / Terminate</button>}
+              }}><span style={{display:"inline-flex",alignItems:"center",gap:4}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Manage Lease / Terminate</span></button>}
               {locked&&<span style={{fontSize:10,color:"#6b5e52"}}>Save required to manage lease</span>}
             </div>
           </div>);})}
@@ -1466,29 +1542,29 @@ export default function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTen
     </div></div>}
 
 
-    {justSaved&&<div style={{marginBottom:8,padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,fontWeight:700,color:_grn,textAlign:"center"}}>
-      ✓ Saved
+    {justSaved&&<div style={{marginBottom:8,padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,fontWeight:700,color:_grn,textAlign:"center",display:"flex",justifyContent:"center",alignItems:"center",gap:6}}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Saved
     </div>}
     <div className="mft" style={{justifyContent:"space-between"}}>
-      <button className="btn btn-red btn-sm" style={{fontSize:11}} onClick={()=>{
+      <button className="btn btn-red btn-sm" style={{fontSize:11,display:"inline-flex",alignItems:"center",gap:4}} onClick={()=>{
         const occ=allRooms(p).filter(r=>r.st==="occupied").length;
         if(occ>0){showAlert({title:"Cannot Delete Property",body:(p.addr||p.name)+" has "+occ+" occupied room"+(occ!==1?"s":"")+" . Remove all tenants before deleting."});}
         else{showConfirm({title:"Delete "+(p.addr||p.name)+"?",body:"This is permanent and cannot be undone. All rooms, photos, and settings for this property will be removed.",confirmLabel:"Delete Property",danger:true,onConfirm:()=>onDelete(p.id)});}
-      }}>🗑 Delete Property</button>
+      }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Delete Property</button>
       <div style={{display:"flex",gap:6}}>
-      <button className="btn btn-out" onClick={onClose}>Cancel</button>
+      <button className="btn btn-out" onClick={tryClose}>Cancel</button>
       <button className={`btn ${justSaved?"btn-green":unsaved?"btn-gold":"btn-out"}`} onClick={()=>{
         if(!p.addr?.trim()){setWarning("Property address is required.");return;}
         setWarning(null);
         setUnsaved(false);setJustSaved(true);
         setTimeout(()=>setJustSaved(false),3000);
         onSave(p);
-      }}>{isNew?"Add Property":justSaved?"✓ Saved":"Save Changes"}</button>
+      }}>{isNew?"Add Property":justSaved?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Saved</span>:"Save Changes"}</button>
       </div>
     </div>
   {showCloseConfirm&&<div className="mbg" style={{zIndex:10001}} onClick={e=>e.stopPropagation()}>
     <div style={{background:"#fff",borderRadius:14,padding:28,maxWidth:360,width:"90%",margin:"auto",position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center",boxShadow:"0 8px 32px rgba(0,0,0,.18)"}}>
-      <div style={{fontSize:32,marginBottom:12}}>⚠️</div>
+      <div style={{marginBottom:12,color:"#d4a853",display:"flex",justifyContent:"center"}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
       <div style={{fontSize:16,fontWeight:700,color:"#1a1714",marginBottom:8}}>Unsaved changes</div>
       <div style={{fontSize:13,color:"#5c4a3a",marginBottom:20,lineHeight:1.5}}>You have unsaved changes to <strong>{p.addr||p.name||"this property"}</strong>. What would you like to do?</div>
       <div style={{display:"flex",gap:10,justifyContent:"center"}}>

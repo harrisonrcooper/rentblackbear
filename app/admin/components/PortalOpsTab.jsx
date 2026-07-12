@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supa } from "@/lib/supabase-client";
+import { resolveTheme } from "@/lib/theme";
 
 /* ── tiny ID ── */
 const uid = () => Math.random().toString(36).slice(2, 11);
@@ -36,12 +37,15 @@ async function getPmId() {
 
 export default function PortalOpsTab({ settings, properties, allTenants, onDirtyChange }) {
   const props = properties || [];
-  const _ac = settings?.adminAccent || "#4a7c59";
-  const _red = "#c45c4a";
-  const _gold = "#d4a853";
-  const _muted = "#6b5e52";
-  const _text = "#3d3529";
-  const _bg = "#f5f0e8";
+  const theme = resolveTheme(settings);
+  // Aliases for compact usage in JSX further down — keeps the existing naming
+  // the component uses while routing every hardcoded hex through the theme.
+  const _ac = theme.accent;
+  const _red = theme.danger;
+  const _gold = theme.gold;
+  const _muted = theme.muted;
+  const _text = "#3d3529";  // structural text color — neutral, not status-driven
+  const _bg = "#f5f0e8";    // structural surface — neutral
 
   /* ── Sub-tab state ── */
   const [portalOpsTab, setPortalOpsTab] = useState("utilities");

@@ -82,11 +82,13 @@ export async function GET(req) {
   info("cron/daily", "Cron started", { date: todayStr });
 
   try {
-    const [props, charges, notifs, settings] = await Promise.all([
+    const [props, charges, notifs, settings, expenses, txns] = await Promise.all([
       supaGet("hq-props"),
       supaGet("hq-charges"),
       supaGet("hq-notifs"),
       supaGet("hq-settings"),
+      supaGet("hq-expenses"),
+      supaGet("hq-txns"),
     ]);
 
     if (!props) return new Response("No props data", { status: 200 });
@@ -99,9 +101,13 @@ export async function GET(req) {
     let updatedCharges = [...(charges || [])];
     let updatedProps = [...(props || [])];
     let updatedNotifs = [...(notifs || [])];
+    let updatedExpenses = [...(expenses || [])];
+    let updatedTxns = [...(txns || [])];
     let chargesChanged = false;
     let propsChanged = false;
     let notifsChanged = false;
+    let expensesChanged = false;
+    let txnsChanged = false;
 
     // ── 1. RENT CHARGE GENERATION ─────────────────────────────────────
     const dayOfMonth = TODAY.getDate();
@@ -262,6 +268,100 @@ export async function GET(req) {
           .replace(/{category}/g, c.category).replace(/{portalLink}/g, portalLink);
         const sent = await sendEmail(tenantEmail, `Payment Reminder — ${c.category} ${fmtS(c.amount - c.amountPaid)} Due`, `<p>${msg.replace(/\n/g, "<br/>")}</p>`, s);
         if (sent) log.push(`📧 Reminder sent: ${c.tenantName} — ${c.category} ${fmtS(c.amount - c.amountPaid)}`);
+      }
+    }
+
+    // ── 4a. RECURRING EXPENSE AUTO-POST ──────────────────────────────
+    // For every expense whose recurring.nextDate has arrived, generate a
+    // follow-up row and advance the parent's nextDate. Idempotent via the
+    // nextDate rollover — if the cron runs twice on the same day, the second
+    // call finds the parent's nextDate already rolled forward and skips.
+    const advanceNext = (fromISO, freq, customCount, customUnit) => {
+      const d = new Date(fromISO + "T00:00:00");
+      if (freq === "weekly")    d.setDate(d.getDate() + 7);
+      else if (freq === "biweekly")  d.setDate(d.getDate() + 14);
+      else if (freq === "monthly")   d.setMonth(d.getMonth() + 1);
+      else if (freq === "quarterly") d.setMonth(d.getMonth() + 3);
+      else if (freq === "yearly")    d.setFullYear(d.getFullYear() + 1);
+      else {
+        const n = Math.max(1, Math.min(999, Number(customCount) || 1));
+        if (customUnit === "days")       d.setDate(d.getDate() + n);
+        else if (customUnit === "weeks") d.setDate(d.getDate() + n * 7);
+        else if (customUnit === "years") d.setFullYear(d.getFullYear() + n);
+        else                             d.setMonth(d.getMonth() + n);
+      }
+      return d.toISOString().split("T")[0];
+    };
+    for (let ei = 0; ei < updatedExpenses.length; ei++) {
+      const exp = updatedExpenses[ei];
+      if (!exp?.recurring?.nextDate) continue;
+      const nextDate = exp.recurring.nextDate;
+      if (nextDate > todayStr) continue;
+      // Generate new expense row dated nextDate
+      const newExp = {
+        ...exp,
+        id: uid(),
+        date: nextDate,
+        createdAt: new Date().toISOString(),
+        // Child inherits recurring metadata so chain continues
+        recurring: { ...exp.recurring, nextDate: advanceNext(nextDate, exp.recurring.freq, exp.recurring.customCount, exp.recurring.customUnit) },
+        parentExpenseId: exp.id,
+      };
+      // Roll parent forward so next cron run doesn't regenerate
+      updatedExpenses[ei] = { ...exp, recurring: { ...exp.recurring, nextDate: newExp.recurring.nextDate } };
+      updatedExpenses.unshift(newExp);
+      updatedTxns.unshift({ ...newExp, txnType: "expense" });
+      expensesChanged = true;
+      txnsChanged = true;
+      log.push(`Recurring expense: ${exp.desc || exp.category} — ${fmtS(exp.amount)} posted for ${nextDate}`);
+    }
+
+    // ── 4b. DUE-DATE RENT REMINDERS (automatic, idempotent) ──────────
+    // Fires on day-before, due-day, day-1-late, day-2-late for every
+    // unpaid Rent charge. Dedup via charge.reminderLog[] so each email
+    // ships once per charge, regardless of how many days the cron runs.
+    for (const charge of updatedCharges) {
+      if (charge.category !== "Rent") continue;
+      if (charge.waived || charge.voided || charge.deleted) continue;
+      if ((charge.amountPaid || 0) >= charge.amount) continue;
+
+      const dueDate = new Date(charge.dueDate + "T00:00:00");
+      const daysUntilDue = Math.round((dueDate - TODAY) / 86400000);
+      const room = roomLookup[charge.roomId];
+      const prop = roomPropLookup[charge.roomId];
+      const lc = getLateConfig(room || {}, prop || {}, s);
+      const lateFeeDay = (lc.graceDays || 3) + 1;
+
+      const schedule = [
+        { offset: 1,  key: "pre-1",  subject: `Rent due tomorrow — ${fmtS(charge.amount - (charge.amountPaid || 0))}`,                      body: `is due <strong>tomorrow</strong> (${fmtD(charge.dueDate)}). Pay now to stay on track.` },
+        { offset: 0,  key: "due-0",  subject: `Rent due today — ${fmtS(charge.amount - (charge.amountPaid || 0))}`,                         body: `is due <strong>today</strong> (${fmtD(charge.dueDate)}). Please pay at your portal.` },
+        { offset: -1, key: "late-1", subject: `Rent is 1 day late`,                                                                          body: `is now <strong>1 day late</strong>. A late fee of ${fmtS(lc.initialFee)} applies on day ${lateFeeDay}.` },
+        { offset: -2, key: "late-2", subject: `Last day before late fee`,                                                                    body: `is overdue. A late fee of ${fmtS(lc.initialFee)} will post tomorrow if unpaid.` },
+      ];
+
+      const step = schedule.find(x => x.offset === daysUntilDue);
+      if (!step) continue;
+      const sentLog = Array.isArray(charge.reminderLog) ? charge.reminderLog : [];
+      if (sentLog.includes(step.key)) continue;
+
+      let tenantEmail = null;
+      if (room && room.tenant?.email) tenantEmail = room.tenant.email;
+      if (!tenantEmail) continue;
+      const firstName = charge.tenantName?.split(" ")[0] || "there";
+
+      const sent = await sendEmail(
+        tenantEmail,
+        step.subject,
+        emailWrap(`<p>Hi ${firstName},</p>
+        <p>Your rent payment of <strong>${fmtS(charge.amount - (charge.amountPaid || 0))}</strong> for ${charge.roomName || "your room"} ${step.body}</p>
+        <p><a href="${portalLink}" style="display:inline-block;padding:12px 24px;background:#4a7c59;color:#fff;border-radius:8px;text-decoration:none;font-weight:700">Pay Now</a></p>
+        <p>${s.companyName || ""}<br/>${s.phone || ""}</p>`),
+        s
+      );
+      if (sent) {
+        charge.reminderLog = [...sentLog, step.key];
+        chargesChanged = true;
+        log.push(`Rent reminder (${step.key}): ${charge.tenantName} — ${fmtS(charge.amount - (charge.amountPaid || 0))}`);
       }
     }
 
@@ -849,6 +949,8 @@ export async function GET(req) {
     if (chargesChanged) saves.push(supaSet("hq-charges", updatedCharges));
     if (propsChanged) saves.push(supaSet("hq-props", updatedProps));
     if (notifsChanged) saves.push(supaSet("hq-notifs", updatedNotifs));
+    if (expensesChanged) saves.push(supaSet("hq-expenses", updatedExpenses));
+    if (txnsChanged) saves.push(supaSet("hq-txns", updatedTxns));
     await Promise.all(saves);
 
     const cronEnd = Date.now();

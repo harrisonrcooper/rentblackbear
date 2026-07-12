@@ -1,5 +1,6 @@
 // app/api/apply-confirm/route.js
 import { getSettings, emailWrap, fromAddress } from "@/lib/getSettings";
+import { getBgCheckAdapter } from "@/lib/integrations/bgCheck";
 
 export async function POST(request) {
   try {
@@ -23,12 +24,36 @@ export async function POST(request) {
       });
     }
 
-    const { name, email, property, room, rent, fee } = await request.json();
+    const body = await request.json();
+    const { name, email, property, room, rent, fee } = body;
     if (!email || typeof email !== "string") return Response.json({ ok:false, error:"No email" }, { status:400 });
     const resendKey = process.env.RESEND_API_KEY;
     if (!resendKey) return Response.json({ ok:true, note:"No Resend key" });
     const s = await getSettings();
     const firstName = name ? name.split(" ")[0] : "there";
+
+    // Kick off background check via whichever vendor adapter is configured
+    // (TransUnion SmartMove / RentPrep / manual). Manual mode just records an
+    // admin notification; real vendors submit to their API and return an
+    // externalId we persist for later polling.
+    let bgCheckResult = null;
+    try {
+      const adapter = getBgCheckAdapter();
+      const first = name ? name.split(" ")[0] : "";
+      const last = name ? name.split(" ").slice(1).join(" ") : "";
+      bgCheckResult = await adapter.submitCheck({
+        id: body.applicantId || null,
+        firstName: first,
+        lastName: last,
+        email,
+        phone: body.phone || null,
+        dob: body.dob || null,
+        ssnLast4: body.ssnLast4 || null,
+        address: body.currentAddress || null,
+      });
+    } catch (bgErr) {
+      console.warn("[apply-confirm] bg-check submit failed:", bgErr?.message || bgErr);
+    }
 
     await fetch("https://api.resend.com/emails", {
       method:"POST", headers:{Authorization:`Bearer ${resendKey}`,"Content-Type":"application/json"},
@@ -66,7 +91,15 @@ export async function POST(request) {
         `, s),
       }),
     });
-    return Response.json({ ok:true });
+    return Response.json({
+      ok: true,
+      bgCheck: bgCheckResult ? {
+        adapter: bgCheckResult.ok ? "submitted" : "failed",
+        externalId: bgCheckResult.externalId || null,
+        statusUrl: bgCheckResult.statusUrl || null,
+        error: bgCheckResult.error || null,
+      } : null,
+    });
   } catch (err) {
     console.error("apply-confirm error:", err);
     return Response.json({ ok:false, error:String(err) }, { status:500 });

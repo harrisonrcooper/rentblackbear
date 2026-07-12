@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { resolveTheme } from "@/lib/theme";
 
 // ── Helpers ────────────────────────────────────────────────────────
 const fmt = n => "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -36,7 +37,7 @@ function AgingTenantRow({ name, t, i, has90, bucketDefs, daysPastDue, getBucket,
       const days = daysPastDue(c);
       const bk = getBucket(c);
       return (<tr key={c.id} style={{ background: "rgba(0,0,0,.02)" }}>
-        <td style={{ ...tdS, paddingLeft: 32, fontSize: 10, color: "#6b5e52" }}>{c.propName} &mdash; {c.desc || c.category}</td>
+        <td style={{ ...tdS, paddingLeft: 32, fontSize: 10, color: theme.muted }}>{c.propName} &mdash; {c.desc || c.category}</td>
         <td style={{ ...tdS, textAlign: "right", fontWeight: 600, fontSize: 10 }}>{fmt(bal)}</td>
         <td colSpan={4} style={{ ...tdS, fontSize: 10, color: bk.color, textAlign: "center" }}>Due: {c.dueDate} ({days} days)</td>
         <td />
@@ -55,10 +56,11 @@ export default function Reports({
   const [reportProp, setReportProp] = useState("all");
   const [activeReport, setActiveReport] = useState(null);
 
-  const _acc = settings?.adminAccent || "#4a7c59";
-  const _grn = settings?.themeGreen || "#4a7c59";
-  const _red = settings?.themeRed || "#c45c4a";
-  const _gold = settings?.themeGold || "#d4a853";
+  const theme = resolveTheme(settings);
+  const _acc = theme.accent;
+  const _grn = settings?.themeGreen || theme.success;
+  const _red = settings?.themeRed || theme.danger;
+  const _gold = theme.gold;
   const TODAY = new Date();
   const props = properties || [];
 
@@ -134,7 +136,7 @@ export default function Reports({
   const TW = ({ children }) => <div style={{ background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.06)", overflowX: "auto" }}>{children}</div>;
 
   // ── Shared table styles ──────────────────────────────────────────
-  const thS = { padding: "9px 12px", fontSize: 9, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .5, whiteSpace: "nowrap" };
+  const thS = { padding: "9px 12px", fontSize: 9, fontWeight: 700, color: theme.muted, textTransform: "uppercase", letterSpacing: .5, whiteSpace: "nowrap" };
   const tdS = { padding: "8px 12px" };
   const trAlt = (i) => ({ borderBottom: "1px solid rgba(0,0,0,.03)", background: i % 2 === 0 ? "#fff" : "rgba(0,0,0,.01)" });
 
@@ -148,7 +150,7 @@ export default function Reports({
         {props.map(p => <option key={p.id} value={p.id}>{getPropDisplayName(p)}</option>)}
       </select>
       <input type="date" value={reportPeriod.from} onChange={e => setReportPeriod(p => ({ ...p, from: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11 }} />
-      <span style={{ fontSize: 11, color: "#6b5e52" }}>to</span>
+      <span style={{ fontSize: 11, color: theme.muted }}>to</span>
       <input type="date" value={reportPeriod.to} onChange={e => setReportPeriod(p => ({ ...p, to: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11 }} />
       <button className="btn btn-out btn-sm" onClick={() => setReportPeriod({ from: TODAY.getFullYear() + "-01-01", to: TODAY.toISOString().split("T")[0] })}>YTD</button>
       <button className="btn btn-out btn-sm" onClick={() => { const y = TODAY.getFullYear() - 1; setReportPeriod({ from: y + "-01-01", to: y + "-12-31" }); }}>Last Year</button>
@@ -164,7 +166,7 @@ export default function Reports({
           onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(0,0,0,.06)"; e.currentTarget.style.background = "#fff"; }}>
           <div style={{ marginBottom: 10, color: "#5c4a3a" }}>{r.icon}</div>
           <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 4 }}>{r.title}</div>
-          <div style={{ fontSize: 11, color: "#6b5e52", lineHeight: 1.5 }}>{r.desc}</div>
+          <div style={{ fontSize: 11, color: theme.muted, lineHeight: 1.5 }}>{r.desc}</div>
           <div style={{ marginTop: 10, fontSize: 10, color: _acc, fontWeight: 700 }}>Open &rarr;</div>
         </div>
       ))}
@@ -212,13 +214,13 @@ export default function Reports({
                   {["Property", "Unit", "Type", "Tenant", "Rent/Mo", "Move-In", "Lease End", "Status"].map(h => <th key={h} style={{ ...thS, textAlign: "left" }}>{h}</th>)}
                 </tr></thead>
                 <tbody>
-                  {rows.length === 0 && <tr><td colSpan={8} style={{ padding: 32, textAlign: "center", color: "#6b5e52" }}>No units found for the selected property filter.</td></tr>}
+                  {rows.length === 0 && <tr><td colSpan={8} style={{ padding: 32, textAlign: "center", color: theme.muted }}>No units found for the selected property filter.</td></tr>}
                   {rows.map((r, i) => <tr key={i} style={trAlt(i)}>
-                    <td style={{ ...tdS, fontWeight: 600 }}>{r.prop}</td><td style={tdS}>{r.unit}</td><td style={{ ...tdS, fontSize: 10, color: "#6b5e52" }}>{r.type}</td>
+                    <td style={{ ...tdS, fontWeight: 600 }}>{r.prop}</td><td style={tdS}>{r.unit}</td><td style={{ ...tdS, fontSize: 10, color: theme.muted }}>{r.type}</td>
                     <td style={{ ...tdS, fontWeight: r.tenant !== "Vacant" ? 700 : 400, color: r.tenant === "Vacant" ? _red : "inherit" }}>{r.tenant}</td>
                     <td style={{ ...tdS, fontWeight: 700 }}>{fmt(r.rent)}</td>
-                    <td style={{ ...tdS, fontSize: 10, color: "#6b5e52" }}>{r.moveIn}</td>
-                    <td style={{ ...tdS, fontSize: 10, color: "#6b5e52" }}>{r.leaseEnd}</td>
+                    <td style={{ ...tdS, fontSize: 10, color: theme.muted }}>{r.moveIn}</td>
+                    <td style={{ ...tdS, fontSize: 10, color: theme.muted }}>{r.leaseEnd}</td>
                     <td style={tdS}><span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 100, fontWeight: 700, background: r.status === "Occupied" ? hexToRgba(_grn, .08) : hexToRgba(_red, .08), color: r.status === "Occupied" ? _grn : _red }}>{r.status}</span></td>
                   </tr>)}
                 </tbody>
@@ -307,7 +309,7 @@ export default function Reports({
                     </tbody>
                   </table>
                   {simpleMgInterest > 0 && !rExpenses.some(e => e.propId === pr.id && e.category === "Mortgage Interest") && (
-                    <div style={{ padding: "8px 16px", fontSize: 10, color: "#6b5e52", borderTop: "1px solid rgba(0,0,0,.04)" }}>Mortgage interest is estimated from current balance and rate. Replace with actual 1098 amount for filing.</div>
+                    <div style={{ padding: "8px 16px", fontSize: 10, color: theme.muted, borderTop: "1px solid rgba(0,0,0,.04)" }}>Mortgage interest is estimated from current balance and rate. Replace with actual 1098 amount for filing.</div>
                   )}
                 </div>);
             })}
@@ -339,7 +341,7 @@ export default function Reports({
                 </tr>
               </tbody>
             </table>
-            {rDSCR != null && <div style={{ padding: "10px 16px", fontSize: 11, color: "#6b5e52", borderTop: "1px solid rgba(0,0,0,.04)" }}>Lenders typically require DSCR &ge; 1.25. {rDSCR >= 1.25 ? "Meets threshold." : "Below typical lender threshold."}</div>}
+            {rDSCR != null && <div style={{ padding: "10px 16px", fontSize: 11, color: theme.muted, borderTop: "1px solid rgba(0,0,0,.04)" }}>Lenders typically require DSCR &ge; 1.25. {rDSCR >= 1.25 ? "Meets threshold." : "Below typical lender threshold."}</div>}
           </TW>);
         })()}
 
@@ -386,7 +388,7 @@ export default function Reports({
               </div>
             </div>}
 
-            {totalAR === 0 && <div style={{ textAlign: "center", padding: 36, color: "#6b5e52", background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.06)" }}>No outstanding receivables.</div>}
+            {totalAR === 0 && <div style={{ textAlign: "center", padding: 36, color: theme.muted, background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.06)" }}>No outstanding receivables.</div>}
 
             {totalAR > 0 && <>
               <div style={{ marginBottom: 8, display: "flex", justifyContent: "flex-end" }}>{csvBtn(csvRows, csvHeaders, "ar-aging-" + TODAY.toISOString().split("T")[0])}</div>
@@ -425,10 +427,10 @@ export default function Reports({
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
               <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>{["Tenant", "Property", "Room", "SD Held ($)", "Deductions ($)", "Net Liability ($)", "Status"].map(h => <th key={h} style={{ ...thS, textAlign: ["SD Held ($)", "Deductions ($)", "Net Liability ($)"].includes(h) ? "right" : "left" }}>{h}</th>)}</tr></thead>
               <tbody>
-                {rows.length === 0 && <tr><td colSpan={7} style={{ padding: 32, textAlign: "center", color: "#6b5e52" }}>No security deposit records found.</td></tr>}
+                {rows.length === 0 && <tr><td colSpan={7} style={{ padding: 32, textAlign: "center", color: theme.muted }}>No security deposit records found.</td></tr>}
                 {rows.map((r, i) => { const ded = (r.deductions || []).reduce((s, d) => s + d.amount, 0); const net = (r.amountHeld || 0) - ded; return (
                   <tr key={r.id} style={trAlt(i)}>
-                    <td style={{ ...tdS, fontWeight: 600 }}>{r.tenantName}</td><td style={{ ...tdS, fontSize: 10 }}>{propDisplay(r.propName)}</td><td style={{ ...tdS, fontSize: 10, color: "#6b5e52" }}>{r.roomName}</td>
+                    <td style={{ ...tdS, fontWeight: 600 }}>{r.tenantName}</td><td style={{ ...tdS, fontSize: 10 }}>{propDisplay(r.propName)}</td><td style={{ ...tdS, fontSize: 10, color: theme.muted }}>{r.roomName}</td>
                     <td style={{ ...tdS, textAlign: "right", fontWeight: 700 }}>{fmt(r.amountHeld || 0)}</td>
                     <td style={{ ...tdS, textAlign: "right", color: _red }}>{ded > 0 ? fmt(ded) : "\u2014"}</td>
                     <td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: _gold }}>{fmt(net)}</td>
@@ -511,7 +513,7 @@ export default function Reports({
 
         {/* ── DSCR Report ── */}
         {activeReport === "dscr" && (() => {
-          if (rMortgages.length === 0) return <div style={{ textAlign: "center", padding: 36, color: "#6b5e52", background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.06)" }}>No mortgages on record. Add mortgages in the Accounting tab first.</div>;
+          if (rMortgages.length === 0) return <div style={{ textAlign: "center", padding: 36, color: theme.muted, background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.06)" }}>No mortgages on record. Add mortgages in the Accounting tab first.</div>;
           return (<>
             {rProps.map(pr => {
               const prInc = propIncome(pr);
@@ -534,12 +536,12 @@ export default function Reports({
                       ["Status", prDSCR == null ? "No debt" : prDSCR >= 1.25 ? "Strong" : prDSCR >= 1.0 ? "Marginal" : "At Risk", prDSCR == null ? "#999" : prDSCR >= 1.25 ? _grn : prDSCR >= 1.0 ? _gold : _red],
                     ].map(([lbl, v, clr]) => (
                       <div key={lbl} style={{ textAlign: "center", padding: "10px", background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
-                        <div style={{ fontSize: 9, color: "#6b5e52", fontWeight: 700, textTransform: "uppercase", marginBottom: 4 }}>{lbl}</div>
+                        <div style={{ fontSize: 9, color: theme.muted, fontWeight: 700, textTransform: "uppercase", marginBottom: 4 }}>{lbl}</div>
                         <div style={{ fontSize: 16, fontWeight: 800, color: clr }}>{v}</div>
                       </div>
                     ))}
                   </div>
-                  {prMg.map(mg => <div key={mg.id} style={{ fontSize: 11, color: "#6b5e52", padding: "6px 0", borderTop: "1px solid rgba(0,0,0,.04)" }}>{mg.lender} &middot; Balance: {fmt(mg.currentBalance || 0)} &middot; Rate: {mg.interestRate || 0}% &middot; P&I: {fmt(mg.monthlyPI || 0)}/mo</div>)}
+                  {prMg.map(mg => <div key={mg.id} style={{ fontSize: 11, color: theme.muted, padding: "6px 0", borderTop: "1px solid rgba(0,0,0,.04)" }}>{mg.lender} &middot; Balance: {fmt(mg.currentBalance || 0)} &middot; Rate: {mg.interestRate || 0}% &middot; P&I: {fmt(mg.monthlyPI || 0)}/mo</div>)}
                 </div>);
             })}
           </>);
@@ -568,7 +570,7 @@ export default function Reports({
                 <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>{["Date", "Tenant", "Description", "Category", "Debit ($)", "Credit ($)", "Balance ($)"].map(h => <th key={h} style={{ ...thS, textAlign: ["Debit ($)", "Credit ($)", "Balance ($)"].includes(h) ? "right" : "left" }}>{h}</th>)}</tr></thead>
                 <tbody>
                   {withBal.map((e, i) => <tr key={i} style={trAlt(i)}>
-                    <td style={{ ...tdS, fontSize: 10, color: "#6b5e52", whiteSpace: "nowrap" }}>{e.date}</td>
+                    <td style={{ ...tdS, fontSize: 10, color: theme.muted, whiteSpace: "nowrap" }}>{e.date}</td>
                     <td style={{ ...tdS, fontWeight: 600, fontSize: 10 }}>{e.tenant}</td>
                     <td style={tdS}>{e.desc}</td>
                     <td style={tdS}><span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 100, background: e.category === "Payment" ? hexToRgba(_grn, .08) : hexToRgba(_acc, .08), color: e.category === "Payment" ? _grn : _acc, fontWeight: 700 }}>{e.category}</span></td>
@@ -576,7 +578,7 @@ export default function Reports({
                     <td style={{ ...tdS, textAlign: "right", color: e.type === "credit" ? _grn : "#ccc", fontWeight: e.type === "credit" ? 700 : 400 }}>{e.type === "credit" ? fmt(e.amount) : "\u2014"}</td>
                     <td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: e.balance > 0 ? _red : e.balance < 0 ? _acc : _grn }}>{e.balance === 0 ? "$0.00" : fmt(e.balance)}</td>
                   </tr>)}
-                  {withBal.length === 0 && <tr><td colSpan={7} style={{ padding: 32, textAlign: "center", color: "#6b5e52" }}>No records found.</td></tr>}
+                  {withBal.length === 0 && <tr><td colSpan={7} style={{ padding: 32, textAlign: "center", color: theme.muted }}>No records found.</td></tr>}
                 </tbody>
               </table>
             </TW>
@@ -652,7 +654,7 @@ export default function Reports({
           return (<>
             <div style={{ padding: "14px 16px", background: "rgba(212,168,83,.06)", borderRadius: 10, border: "1px solid rgba(212,168,83,.2)", marginBottom: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: "#9a7422", marginBottom: 6 }}>Tax Prep Package &mdash; {year}</div>
-              <div style={{ fontSize: 11, color: "#6b5e52", lineHeight: 1.6, marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: theme.muted, lineHeight: 1.6, marginBottom: 10 }}>
                 Downloads Schedule E summary + P&L for {rProps.length === props.length ? "all" : rProps.length} propert{rProps.length === 1 ? "y" : "ies"}.
                 Hand both files to your CPA for Schedule E filing. Cash-basis accounting.
               </div>
@@ -662,15 +664,15 @@ export default function Reports({
               </button>
             </div>
             {warnings.length > 0 && <div style={{ padding: "10px 14px", background: "rgba(196,92,74,.04)", borderRadius: 8, border: "1px solid rgba(196,92,74,.15)", marginBottom: 14 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#c45c4a", textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Review Before Filing</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: _red, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Review Before Filing</div>
               {warnings.map((w, i) => <div key={i} style={{ fontSize: 11, color: "#8b4a3a", padding: "3px 0" }}>{w}</div>)}
             </div>}
             {/* Preview: per-property summary */}
             {rProps.map(pr => {
               const inc = propIncome(pr); const exp = propTotalExp(pr); const noi = inc - exp;
               return (<div key={pr.id} style={{ background: "#fff", borderRadius: 8, border: "1px solid rgba(0,0,0,.06)", padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div><div style={{ fontWeight: 700, fontSize: 12 }}>{getPropDisplayName(pr)}</div><div style={{ fontSize: 10, color: "#6b5e52", marginTop: 2 }}>Income {fmt(inc)} &middot; Expenses {fmt(exp)}</div></div>
-                <div style={{ textAlign: "right" }}><div style={{ fontWeight: 800, fontSize: 15, color: noi >= 0 ? _grn : _red }}>{fmtParen(noi)}</div><div style={{ fontSize: 9, color: "#6b5e52" }}>NOI</div></div>
+                <div><div style={{ fontWeight: 700, fontSize: 12 }}>{getPropDisplayName(pr)}</div><div style={{ fontSize: 10, color: theme.muted, marginTop: 2 }}>Income {fmt(inc)} &middot; Expenses {fmt(exp)}</div></div>
+                <div style={{ textAlign: "right" }}><div style={{ fontWeight: 800, fontSize: 15, color: noi >= 0 ? _grn : _red }}>{fmtParen(noi)}</div><div style={{ fontSize: 9, color: theme.muted }}>NOI</div></div>
               </div>);
             })}
           </>);
@@ -720,7 +722,7 @@ export default function Reports({
           return (<>
             <div style={{ padding: "14px 16px", background: "rgba(74,124,89,.04)", borderRadius: 10, border: "1px solid rgba(74,124,89,.2)", marginBottom: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: _grn, marginBottom: 6 }}>Lender Packet &mdash; {year}</div>
-              <div style={{ fontSize: 11, color: "#6b5e52", lineHeight: 1.6, marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: theme.muted, lineHeight: 1.6, marginBottom: 10 }}>
                 Downloads rent roll, trailing 12-month income, and cash flow with DSCR.
                 Three CSVs your banker can open directly.
               </div>
@@ -743,11 +745,11 @@ export default function Reports({
                 { label: "DSCR", value: rDSCR != null ? rDSCR.toFixed(2) + "x" : "N/A", color: rDSCR && rDSCR >= 1.25 ? _grn : _red },
                 { label: "Free Cash Flow", value: fmtParen(fcf), color: fcf >= 0 ? _grn : _red },
               ].map(k => <div key={k.label} style={{ background: "#fff", borderRadius: 8, padding: "12px 14px", border: "1px solid rgba(0,0,0,.06)", textAlign: "center" }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>{k.label}</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: theme.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>{k.label}</div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: k.color }}>{k.value}</div>
               </div>)}
             </div>
-            <div style={{ fontSize: 10, color: "#6b5e52", padding: "8px 12px", background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
+            <div style={{ fontSize: 10, color: theme.muted, padding: "8px 12px", background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
               {rDSCR != null && rDSCR >= 1.25 ? "DSCR meets typical lender threshold (1.25x)." : rDSCR != null ? "DSCR is below the typical 1.25x lender threshold." : "Add mortgage data in Ledger to calculate DSCR."}
             </div>
           </>);
@@ -805,7 +807,7 @@ export default function Reports({
           };
 
           return (<>
-            <div style={{ fontSize: 11, color: "#6b5e52", marginBottom: 14, padding: "10px 14px", background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
+            <div style={{ fontSize: 11, color: theme.muted, marginBottom: 14, padding: "10px 14px", background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
               Comparing <strong>{cLabel}</strong> vs <strong>{pLabel}</strong> (prior equivalent period). Adjust the date range above to change comparison windows.
             </div>
             {/* Portfolio summary */}
@@ -821,7 +823,7 @@ export default function Reports({
                   {rows.map((r, i) => <tr key={r.metric} style={trAlt(i)}>
                     <td style={{ ...tdS, fontWeight: 700 }}>{r.metric}</td>
                     <td style={{ ...tdS, textAlign: "right", fontWeight: 700 }}>{fmt(r.current)}</td>
-                    <td style={{ ...tdS, textAlign: "right", color: "#6b5e52" }}>{fmt(r.prior)}</td>
+                    <td style={{ ...tdS, textAlign: "right", color: theme.muted }}>{fmt(r.prior)}</td>
                     <td style={{ ...tdS, textAlign: "center" }}><DeltaBadge cur={r.current} prev={r.prior} goodDir={r.goodDir} /></td>
                   </tr>)}
                 </tbody>
@@ -829,7 +831,7 @@ export default function Reports({
             </TW>
             {/* Per-property breakdown */}
             {rProps.length > 1 && <>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#6b5e52", textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>By Property</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: theme.muted, textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>By Property</div>
               <TW>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                   <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>
@@ -844,9 +846,9 @@ export default function Reports({
                     {propRows.map((pr, i) => <tr key={pr.name} style={trAlt(i)}>
                       <td style={{ ...tdS, fontWeight: 600 }}>{pr.name}</td>
                       <td style={{ ...tdS, textAlign: "right" }}>{fmt(pr.cInc)}</td>
-                      <td style={{ ...tdS, textAlign: "right", color: "#6b5e52" }}>{fmt(pr.pInc)}</td>
+                      <td style={{ ...tdS, textAlign: "right", color: theme.muted }}>{fmt(pr.pInc)}</td>
                       <td style={{ ...tdS, textAlign: "right", fontWeight: 700, color: pr.cNOI >= 0 ? _grn : _red }}>{fmtParen(pr.cNOI)}</td>
-                      <td style={{ ...tdS, textAlign: "right", color: "#6b5e52" }}>{fmtParen(pr.pNOI)}</td>
+                      <td style={{ ...tdS, textAlign: "right", color: theme.muted }}>{fmtParen(pr.pNOI)}</td>
                       <td style={{ ...tdS, textAlign: "center" }}><DeltaBadge cur={pr.cNOI} prev={pr.pNOI} goodDir="up" /></td>
                     </tr>)}
                   </tbody>
@@ -859,7 +861,7 @@ export default function Reports({
         {activeReport === "tenantquality" && (() => {
           const allSources = [...new Set((apps || []).map(a => a.source || "Unknown"))];
           return (<>
-            <div style={{ fontSize: 11, color: "#6b5e52", marginBottom: 12, padding: "8px 12px", background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
+            <div style={{ fontSize: 11, color: theme.muted, marginBottom: 12, padding: "8px 12px", background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
               Quality score is based on lease completion rate, broke-lease rate, and average tenure from past tenants linked to each source.
             </div>
             <TW>
@@ -973,7 +975,7 @@ export default function Reports({
           return (<>
             {/* Date range presets */}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14, alignItems: "center" }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#6b5e52" }}>Quick range:</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: theme.muted }}>Quick range:</span>
               {qbPresets.map(p => (
                 <button key={p.label} className="btn btn-out btn-sm" onClick={p.fn}>{p.label}</button>
               ))}
@@ -985,13 +987,13 @@ export default function Reports({
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: "middle" }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
                 Download QuickBooks CSV
               </button>
-              <span style={{ fontSize: 11, color: "#6b5e52" }}>{allRows.length} transactions ({incomeRows.length} income, {expenseRows.length} expenses) &middot; {rFrom} to {rTo}</span>
+              <span style={{ fontSize: 11, color: theme.muted }}>{allRows.length} transactions ({incomeRows.length} income, {expenseRows.length} expenses) &middot; {rFrom} to {rTo}</span>
             </div>
 
             {/* Account mapping reference */}
             <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(0,0,0,.02)", borderRadius: 8, border: "1px solid rgba(0,0,0,.04)" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Schedule E to QuickBooks Account Mapping</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: "2px 16px", fontSize: 10, color: "#6b5e52" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: theme.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Schedule E to QuickBooks Account Mapping</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: "2px 16px", fontSize: 10, color: theme.muted }}>
                 {Object.entries(SCHED_E_TO_QB).map(([k, v]) => (
                   <div key={k}><span style={{ fontWeight: 600 }}>{k}</span> &rarr; {v}</div>
                 ))}
@@ -1070,12 +1072,12 @@ export default function Reports({
                 { label: "Total Vendors", value: vendorRows.length, color: "#5c4a3a" },
                 { label: "Total Paid", value: fmt(vendorRows.reduce((s, v) => s + v.totalPaid, 0)), color: _acc },
               ].map(k => <div key={k.label} style={{ background: "#fff", borderRadius: 8, padding: "12px 14px", border: "1px solid rgba(0,0,0,.06)", textAlign: "center" }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>{k.label}</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: theme.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>{k.label}</div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: k.color }}>{k.value}</div>
               </div>)}
             </div>
 
-            {vendorRows.length === 0 && <div style={{ textAlign: "center", padding: 36, color: "#6b5e52", background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.06)" }}>No vendor expenses found for {taxYear}. Log expenses with vendor names in the Accounting tab.</div>}
+            {vendorRows.length === 0 && <div style={{ textAlign: "center", padding: 36, color: theme.muted, background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.06)" }}>No vendor expenses found for {taxYear}. Log expenses with vendor names in the Accounting tab.</div>}
 
             {vendorRows.length > 0 && <TW>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
@@ -1089,7 +1091,7 @@ export default function Reports({
                     return (<tr key={v.name} style={{ ...trAlt(i), background: isApproaching ? hexToRgba(_gold, .06) : needs1099 ? hexToRgba(_red, .03) : trAlt(i).background }}>
                       <td style={{ ...tdS, fontWeight: 700 }}>{v.name}</td>
                       <td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: needs1099 ? _red : isApproaching ? "#9a7422" : "inherit" }}>{fmt(v.totalPaid)}</td>
-                      <td style={{ ...tdS, textAlign: "center", fontSize: 10, color: v.tin ? "#5c4a3a" : "#c45c4a" }}>{v.tin || "Not on file"}</td>
+                      <td style={{ ...tdS, textAlign: "center", fontSize: 10, color: v.tin ? "#5c4a3a" : _red }}>{v.tin || "Not on file"}</td>
                       <td style={{ ...tdS, textAlign: "center", fontSize: 10, color: v.address ? "#5c4a3a" : "#999" }}>{v.address || "Not on file"}</td>
                       <td style={{ ...tdS, textAlign: "center" }}>
                         {needs1099 && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 100, fontWeight: 700, background: hexToRgba(_red, .08), color: _red }}>Yes</span>}
@@ -1212,7 +1214,7 @@ export default function Reports({
             {/* Main download card */}
             <div style={{ padding: "14px 16px", background: hexToRgba(_acc, .04), borderRadius: 10, border: "1px solid " + hexToRgba(_acc, .2), marginBottom: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: _acc, marginBottom: 6 }}>Year-End Tax Package -- {taxYear}</div>
-              <div style={{ fontSize: 11, color: "#6b5e52", lineHeight: 1.6, marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: theme.muted, lineHeight: 1.6, marginBottom: 10 }}>
                 Downloads {sectionCount} CSV file{sectionCount !== 1 ? "s" : ""}: Schedule E summary{vendor1099Rows.length > 0 ? ", 1099 vendor list" : ""}{mortgageRows.length > 0 ? ", mortgage interest" : ""}{sdRows.length > 0 ? ", security deposits" : ""}{depRows.length > 0 ? ", depreciation schedule" : ""}. Hand these to your CPA.
               </div>
               <button className="btn btn-green btn-sm" style={{ fontWeight: 700, fontSize: 12, padding: "8px 20px" }} onClick={exportTaxPackage}>
@@ -1222,20 +1224,20 @@ export default function Reports({
             </div>
 
             {/* Section previews */}
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .8, marginBottom: 8 }}>Schedule E Summary</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: theme.muted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 8 }}>Schedule E Summary</div>
             {props.map(pr => {
               const inc = yPayments.filter(p => p.propName === pr.name).reduce((s, p) => s + p.amount, 0);
               const prExpArr = [...yExpenses.filter(e => e.propId === pr.id), ...yExpenses.filter(e => e.propId === "shared").map(e => ({ ...e, amount: ySharedExpAlloc(e.amount) }))];
               const exp = prExpArr.reduce((s, e) => s + e.amount, 0);
               const noi = inc - exp;
               return (<div key={pr.id} style={{ background: "#fff", borderRadius: 8, border: "1px solid rgba(0,0,0,.06)", padding: "10px 16px", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div><div style={{ fontWeight: 700, fontSize: 12 }}>{getPropDisplayName(pr)}</div><div style={{ fontSize: 10, color: "#6b5e52", marginTop: 2 }}>Income {fmt(inc)} / Expenses {fmt(exp)}</div></div>
-                <div style={{ textAlign: "right" }}><div style={{ fontWeight: 800, fontSize: 15, color: noi >= 0 ? _grn : _red }}>{fmtParen(noi)}</div><div style={{ fontSize: 9, color: "#6b5e52" }}>NOI</div></div>
+                <div><div style={{ fontWeight: 700, fontSize: 12 }}>{getPropDisplayName(pr)}</div><div style={{ fontSize: 10, color: theme.muted, marginTop: 2 }}>Income {fmt(inc)} / Expenses {fmt(exp)}</div></div>
+                <div style={{ textAlign: "right" }}><div style={{ fontWeight: 800, fontSize: 15, color: noi >= 0 ? _grn : _red }}>{fmtParen(noi)}</div><div style={{ fontSize: 9, color: theme.muted }}>NOI</div></div>
               </div>);
             })}
 
             {vendor1099Rows.length > 0 && <>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>1099 Vendors ({vendor1099Rows.length})</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: theme.muted, textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>1099 Vendors ({vendor1099Rows.length})</div>
               <TW>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                   <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>
@@ -1244,7 +1246,7 @@ export default function Reports({
                   <tbody>{vendor1099Rows.map((v, i) => <tr key={v["Vendor Name"]} style={trAlt(i)}>
                     <td style={{ ...tdS, fontWeight: 700 }}>{v["Vendor Name"]}</td>
                     <td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: _red }}>{fmt(parseFloat(v["Total Paid"]))}</td>
-                    <td style={{ ...tdS, textAlign: "center", fontSize: 10, color: v.TIN !== "Not on file" ? "#5c4a3a" : "#c45c4a" }}>{v.TIN}</td>
+                    <td style={{ ...tdS, textAlign: "center", fontSize: 10, color: v.TIN !== "Not on file" ? "#5c4a3a" : _red }}>{v.TIN}</td>
                     <td style={{ ...tdS, textAlign: "center", fontSize: 10, color: v.Address !== "Not on file" ? "#5c4a3a" : "#999" }}>{v.Address}</td>
                   </tr>)}</tbody>
                 </table>
@@ -1252,7 +1254,7 @@ export default function Reports({
             </>}
 
             {mortgageRows.length > 0 && <>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>Mortgage Interest Summary</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: theme.muted, textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>Mortgage Interest Summary</div>
               <TW>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                   <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>
@@ -1271,11 +1273,11 @@ export default function Reports({
                   </tr></tfoot>
                 </table>
               </TW>
-              <div style={{ fontSize: 10, color: "#6b5e52", padding: "6px 12px", marginTop: 4 }}>Interest amounts are estimated from current balance and rate. Replace with actual 1098 amounts for filing.</div>
+              <div style={{ fontSize: 10, color: theme.muted, padding: "6px 12px", marginTop: 4 }}>Interest amounts are estimated from current balance and rate. Replace with actual 1098 amounts for filing.</div>
             </>}
 
             {sdRows.length > 0 && <>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>Security Deposit Summary</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: theme.muted, textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>Security Deposit Summary</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(100px,1fr))", gap: 8, marginBottom: 8 }}>
                 {[
                   { label: "Total Held", value: fmt(sdRows.reduce((s, r) => s + parseFloat(r["Amount Held"]), 0)), color: _gold },
@@ -1283,14 +1285,14 @@ export default function Reports({
                   { label: "Still Held", value: sdRows.filter(r => r.Status === "Held").length, color: "#5c4a3a" },
                   { label: "Total Deductions", value: fmt(sdRows.reduce((s, r) => s + parseFloat(r.Deductions), 0)), color: _red },
                 ].map(k => <div key={k.label} style={{ background: "#fff", borderRadius: 8, padding: "10px 12px", border: "1px solid rgba(0,0,0,.06)", textAlign: "center" }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>{k.label}</div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: theme.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>{k.label}</div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: k.color }}>{k.value}</div>
                 </div>)}
               </div>
             </>}
 
             {depRows.length > 0 && <>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>Depreciation Schedule ({depRows.length} assets)</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: theme.muted, textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>Depreciation Schedule ({depRows.length} assets)</div>
               <TW>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                   <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>
@@ -1299,7 +1301,7 @@ export default function Reports({
                   <tbody>{depRows.map((d, i) => <tr key={i} style={trAlt(i)}>
                     <td style={{ ...tdS, fontWeight: 600, fontSize: 10 }}>{d.Property}</td>
                     <td style={tdS}>{d.Asset}</td>
-                    <td style={{ ...tdS, fontSize: 10, color: "#6b5e52" }}>{d["Date Placed"]}</td>
+                    <td style={{ ...tdS, fontSize: 10, color: theme.muted }}>{d["Date Placed"]}</td>
                     <td style={{ ...tdS, textAlign: "right", fontWeight: 700 }}>{fmt(parseFloat(d["Cost Basis"]))}</td>
                     <td style={{ ...tdS, textAlign: "right" }}>{d["Useful Life (yrs)"]}</td>
                     <td style={{ ...tdS, textAlign: "right", fontWeight: 700, color: _red }}>{fmt(parseFloat(d["Annual Depreciation"]))}</td>

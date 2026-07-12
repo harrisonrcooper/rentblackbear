@@ -2,6 +2,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { syncTenantToSupabase } from "@/lib/syncTenant";
 import HoldToConfirm from "./HoldToConfirm";
+import EmptyState from "./EmptyState";
 
 /* ── Icons (flat SVG only) ────────────────────────────────── */
 const IconSearch = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7a7067" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
@@ -35,7 +36,7 @@ export default function TenantsTab({
   setModal, setArchive, setProps, setCharges,
   setPayments, setMaint, setLeases, setNotifs, createCharge,
   setTenantProfileTab, setPiState,
-  fmtD, fmtS, getPropDisplayName, TODAY, MO, onSmartImport,
+  fmtD, fmtS, getPropDisplayName, TODAY, MO, onSmartImport, goTab,
 }) {
   const _ac = settings?.adminAccent || "#4a7c59";
   const _acRgb = settings?.adminAccentRgb || "74,124,89";
@@ -646,9 +647,26 @@ export default function TenantsTab({
             </div>
           </div>);
       })}
-        {pageRows.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#6b5e52" }}>
-          {allTenants.length === 0 ? "No active tenants yet." : quickFilter ? "No tenants match this filter." : "No tenants match your search."}
-        </div>}
+        {pageRows.length === 0 && (
+          allTenants.length === 0 ? (
+            <EmptyState
+              accent={settings?.adminAccent}
+              icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={settings?.adminAccent||"#4a7c59"} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+              title="No tenants yet"
+              message="Tenants land here once you approve an application or import from an existing system."
+              action={{ label: "Go to Applications", onClick: () => goTab && goTab("applications") }}
+            />
+          ) : (
+            <EmptyState
+              accent={settings?.adminAccent}
+              icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={settings?.adminAccent||"#4a7c59"} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>}
+              title="No tenants match"
+              message={quickFilter ? "This filter didn't match any active tenants." : "Try a different search term or clear the filters to see everyone."}
+              action={{ label: "Clear filters", onClick: () => { setQuickFilter(null); setTenantSearch(""); setTenantPropFilter("all"); setPage(0); } }}
+              compact
+            />
+          )
+        )}
       </>}
 
       {/* ═══ Pagination ═══ */}

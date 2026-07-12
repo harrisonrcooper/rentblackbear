@@ -28,10 +28,11 @@ import TenantsTab from "./components/TenantsTab";
 import PaymentsTab from "./components/PaymentsTab";
 import TenantTimeline from "./components/TenantTimeline";
 import AddExpenseSheet from "./components/AddExpenseSheet";
+import PwaInstallPrompt from "./components/PwaInstallPrompt";
 import { motion, AnimatePresence } from "framer-motion";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
 
 // ── Inline SVG nav icons (no external dependency) ──────────────────
@@ -67,11 +68,13 @@ const SUPA_URL=process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // ── Lease instance CRUD (lease_instances table) ──────────────────────────────
-const LEASE_TEMPLATE_ID="2d9d0941-2802-468a-a6e8-b2cceacf78d1";
+// Template id is resolved at runtime from the workspace's lease_templates table
+// via lib/leaseTemplate.js so a brand-new PM without the legacy UUID still works.
+import { getDefaultLeaseTemplateId } from "@/lib/leaseTemplate";
 const leaseRowToObj=(row)=>({...(row.variable_data||{}),id:row.id,status:row.status,landlordSig:row.landlord_sig,landlordSignature:row.landlord_sig,landlordSignedAt:row.landlord_signed_at,tenantSig:row.tenant_sig,tenantSignedAt:row.tenant_signed_at,signingToken:row.signing_token,signingLink:row.signing_link,pdfUrl:row.pdf_url,roomId:row.room_id||(row.variable_data?.roomId)||"",propertyId:row.property_id||(row.variable_data?.propertyId)||"",createdAt:row.created_at,updatedAt:row.updated_at});
-const leaseObjToRow=(lease)=>({id:lease.id,workspace_id:null,template_id:LEASE_TEMPLATE_ID,tenant_id:lease.tenantEmail||null,room_id:lease.roomId||null,property_id:lease.propertyId||null,variable_data:lease,status:lease.status||"draft",landlord_sig:lease.landlordSignature||lease.landlordSig||null,tenant_sig:lease.tenantSig||null,landlord_signed_at:lease.landlordSignedAt||null,tenant_signed_at:lease.tenantSignedAt||null,signing_token:lease.signingToken||null,signing_link:lease.signingLink||null,pdf_url:lease.pdfUrl||null,updated_at:new Date().toISOString()});
+const leaseObjToRow=(lease,templateId)=>({id:lease.id,workspace_id:null,template_id:templateId,tenant_id:lease.tenantEmail||null,room_id:lease.roomId||null,property_id:lease.propertyId||null,variable_data:lease,status:lease.status||"draft",landlord_sig:lease.landlordSignature||lease.landlordSig||null,tenant_sig:lease.tenantSig||null,landlord_signed_at:lease.landlordSignedAt||null,tenant_signed_at:lease.tenantSignedAt||null,signing_token:lease.signingToken||null,signing_link:lease.signingLink||null,pdf_url:lease.pdfUrl||null,updated_at:new Date().toISOString()});
 async function loadLeases(){try{const r=await supa("lease_instances?order=created_at.desc");const rows=await r.json();if(!Array.isArray(rows))return[];return rows.map(leaseRowToObj);}catch(e){console.error("Load leases error:",e);return[];}}
-async function upsertLease(lease){try{await supa("lease_instances",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify(leaseObjToRow(lease))});}catch(e){console.error("Upsert lease error:",e);}}
+async function upsertLease(lease){try{const templateId=await getDefaultLeaseTemplateId();await supa("lease_instances",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify(leaseObjToRow(lease,templateId))});}catch(e){console.error("Upsert lease error:",e);}}
 async function patchLease(id,updates){try{await supa("lease_instances?id=eq."+id,{method:"PATCH",prefer:"resolution=merge-duplicates",body:JSON.stringify({...updates,updated_at:new Date().toISOString()})});}catch(e){console.error("Patch lease error:",e);}}
 async function deleteLeaseInDB(id){try{await supa("lease_instances?id=eq."+id,{method:"DELETE"});}catch(e){console.error("Delete lease error:",e);}}
 
@@ -389,7 +392,12 @@ const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
 // Default — operator sets their own in Settings
-const DEF_SETTINGS={companyName:"Your Company",legalName:"Your Legal Entity LLC",pmName:"Property Manager",phone:"(555) 000-0000",email:"hello@example.com",pmEmail:"",city:"Your City, ST",tagline:"Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you!",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,mobileTabs:["dashboard","tenants","applications","money"],couplesDefault:false,
+const DEF_SETTINGS={companyName:"Your Company",legalName:"Your Legal Entity LLC",pmName:"Property Manager",phone:"(555) 000-0000",email:"hello@example.com",pmEmail:"",city:"Your City, ST",tagline:"Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you!",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,
+  // Status color palette — referenced by components as settings.themeDanger etc. with
+  // these defaults. Extending here makes the status colors theme-able without touching
+  // every component that currently hardcodes #c45c4a / #d4a853 / #4a7c59.
+  themeDanger:"#c45c4a",themeSuccess:"#4a7c59",themeGold:"#d4a853",themeWarn:"#d4a853",themeMuted:"#6b5e52",themeInfo:"#3b82f6",
+  m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,mobileTabs:["dashboard","tenants","applications","money"],couplesDefault:false,
   // Portfolio-wide late fee defaults — per-room lateConfig inherits these if fields are null
   lateFeeGraceDays:3,    // days after due before any fee applies
   lateFeeInitial:50,     // default one-time initial fee (flat $)
@@ -500,7 +508,7 @@ const S=`
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#f4f3f0;color:#1a1714}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes confettiFall{0%{transform:translateY(-100vh) rotate(0deg);opacity:1}70%{opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+@keyframes confettiFall{0%{transform:translateY(-100dvh) rotate(0deg);opacity:1}70%{opacity:1}100%{transform:translateY(100dvh) rotate(720deg);opacity:0}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
 @keyframes spin{to{transform:rotate(360deg)}}@keyframes wiggle{0%,100%{transform:rotate(0deg) translate(0,0)}20%{transform:rotate(-1.5deg) translate(-0.5px,0.5px)}40%{transform:rotate(1deg) translate(0.5px,-0.5px)}60%{transform:rotate(-0.5deg) translate(-0.5px,0)}80%{transform:rotate(1.5deg) translate(0.5px,0.5px)}}
 @keyframes wiggle2{0%,100%{transform:rotate(0deg) translate(0,0)}15%{transform:rotate(1deg) translate(0.5px,0.5px)}35%{transform:rotate(-1.5deg) translate(-0.5px,-0.5px)}55%{transform:rotate(0.5deg) translate(0.5px,0)}75%{transform:rotate(-1deg) translate(-0.5px,0.5px)}90%{transform:rotate(1.5deg) translate(0,0.5px)}}
@@ -543,8 +551,8 @@ const S=`
 .lead-toast.out{animation:toastOut .3s ease-in forwards}
 
 /* Layout */
-.app{display:flex;height:100vh;overflow:hidden}
-.side{width:220px;background:#1a1714;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;z-index:50;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.app{display:flex;height:100dvh;overflow:hidden}
+.side{width:220px;background:#1a1714;flex-shrink:0;position:fixed;top:0;left:0;height:100dvh;z-index:50;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-top:env(safe-area-inset-top)}
 .side-scroll{padding-bottom:16px}
 .s-logo{padding:16px 18px;font-size:15px;font-weight:800;color:#f5f0e8;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:7px}
 .s-logo span{color:#d4a853}
@@ -561,7 +569,7 @@ const S=`
 .s-ft a{display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.45);text-decoration:none;padding:6px 0;transition:color .15s}.s-ft a:hover{color:#d4a853}
 
 /* Mobile sidebar */
-.mob-header{display:none;background:#1a1714;padding:12px 16px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.mob-header{display:none;background:#1a1714;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
 .mob-header .s-logo{padding:0;border:none}
 .mob-toggle{background:none;border:none;color:#f5f0e8;font-size:20px;cursor:pointer;padding:4px}
 .mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
@@ -710,7 +718,7 @@ button:not(.btn):hover{opacity:.7;transform:translateY(-1px)}
   .tbl thead,.tbl tbody,.tbl tr{display:table;width:100%;table-layout:auto}
   .tbl th,.tbl td{padding:8px 10px;font-size:10px}
   .mbg{align-items:flex-end}
-  .mbox{max-width:100%!important;width:100%;border-radius:16px 16px 0 0;max-height:90vh;overflow-y:auto;animation:slideUp .25s ease-out}
+  .mbox{max-width:100%!important;width:100%;border-radius:16px 16px 0 0;animation:slideUp .25s ease-out}
   @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   .mft{flex-wrap:wrap}.mft button{flex:1;min-width:100px;min-height:44px}
   .fld input,.fld select,.fld textarea{font-size:16px!important;padding:10px 12px;min-height:44px}
@@ -737,12 +745,45 @@ button:not(.btn):hover{opacity:.7;transform:translateY(-1px)}
   .pay-tab{padding:8px 6px;font-size:11px!important}
   .btn{font-size:10px;padding:8px 10px}
 }
+
+/* Tight iPhone (SE / mini / 12 / 13) — 375px viewport */
+@media(max-width:380px){
+  .tbar{padding:8px 12px}
+  .tbar h1{font-size:14px;gap:6px}
+  .tbar-sub{font-size:10px}
+  .cnt{padding:8px}
+  .bot-tab{font-size:8px;padding:6px 2px;min-height:50px}
+  .bot-tab svg{width:18px;height:18px}
+  .bot-fab{width:50px;height:50px;bottom:calc(64px + env(safe-area-inset-bottom))}
+  .kpi{padding:8px 6px}
+  .kv{font-size:18px}
+  .badge{font-size:8px;padding:3px 7px}
+  .st-pill{font-size:9px;padding:4px 9px}
+  .card-bd{padding:10px}
+  .card-hd{padding:10px}
+  .row{padding:8px 10px;gap:6px}
+  .fld label{font-size:11px}
+  .fld input,.fld select,.fld textarea{padding:9px 10px}
+  .pay-tab{padding:6px 4px;font-size:10px!important}
+  .btn{font-size:10px;padding:7px 9px;min-height:42px}
+  .btn-sm{padding:6px 8px;font-size:9px;min-height:40px}
+}
+/* Neutralize sticky-hover on touch devices so tapped elements don't stay highlighted. Guards only structural effects; text-color hovers are left alone. */
+@media (hover: none) {
+  .btn:hover,.btn-gold:hover,.btn-dk:hover,.btn-green:hover,.btn-red:hover,.btn-out:hover,
+  .pay-tab:hover,.hvr-row:hover,.kpi:hover,.card-hd:hover,.row:hover,.pipe-card:hover,
+  .ms-item:hover,.dot-opt:hover,.dot-opt.danger:hover,.qf-btn:hover,.sn:hover,
+  .ob-row-hover:hover,.acct-row:hover {
+    background:revert!important;transform:revert!important;border-color:revert!important;box-shadow:revert!important;
+  }
+}
 `;
 
 // ─── Main App ───────────────────────────────────────────────────────
 export default function Page(){
   // ── Workspace isolation: set workspace_id from Clerk user ──
   const { user: clerkUser } = useUser();
+  const { signOut } = useClerk();
   useEffect(() => {
     if (clerkUser?.id) setWorkspace(clerkUser.id);
     return () => setWorkspace(null); // cleanup on unmount
@@ -925,6 +966,12 @@ export default function Page(){
       }
     }
     setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);
+    // First-run: brand-new PM with zero properties lands on the Properties tab
+    // (where they can add their first) instead of the empty Dashboard.
+    // OnboardingWizard assumes existing props, so it's the wrong destination for a fresh account.
+    if((propsWithCoords||[]).length===0 && !(st||{}).onboardingCompletedAt){
+      setTab("properties");
+    }
     // Migration: inject doorCode field if missing from saved hq-app-fields
     const hasDoorCode=(af||[]).some(f=>f.key==="doorCode");
     const migratedAf=(()=>{if(hasDoorCode||(af||[]).length===0)return af||[];const idx=af.findIndex(f=>f.key==="selectedRoom");const insertAt=idx>=0?idx+1:af.findIndex(f=>f.section==="Move-In & Property")+1;const at=insertAt<0?af.length:insertAt;return[...af.slice(0,at),DOOR_CODE_APP_FIELD,...af.slice(at)];})();
@@ -946,6 +993,23 @@ export default function Page(){
     console.log("Admin init complete, setting loaded=true");
     setLoaded(true);
   })();},[]);
+
+  // Charges freshness — the admin starts with a one-time load, so a tenant-side
+  // Stripe payment that lands via webhook won't show up here until a refresh.
+  // Poll on tab-visibility + a 60s interval so the Payments / Dashboard balance
+  // stays eventually-consistent within a minute, without a realtime subscription.
+  useEffect(()=>{
+    if(!loaded)return;
+    let cancelled=false;
+    const refreshCharges=async()=>{
+      try{const fresh=await db.loadCharges([]);if(!cancelled&&Array.isArray(fresh))setCharges(fresh);}catch{}
+    };
+    const onVis=()=>{if(document.visibilityState==="visible")refreshCharges();};
+    document.addEventListener("visibilitychange",onVis);
+    window.addEventListener("focus",refreshCharges);
+    const iv=setInterval(()=>{if(document.visibilityState==="visible")refreshCharges();},60000);
+    return()=>{cancelled=true;clearInterval(iv);document.removeEventListener("visibilitychange",onVis);window.removeEventListener("focus",refreshCharges);};
+  },[loaded]);
 
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([
     // Tier 3: complex nested data stays in app_data
@@ -1390,7 +1454,7 @@ export default function Page(){
   const confirmAction=(title,onConfirm,body="This cannot be undone.")=>{setModal({type:"confirmAction",title,body,confirmLabel:"Confirm",confirmStyle:"btn-red",onConfirm:()=>{onConfirm();setModal(null);}});};
   const shakeModal=()=>{const mb=document.querySelector(".mbox");if(mb){mb.style.animation="none";mb.offsetHeight;mb.style.animation="shake .4s ease, redFlash .5s ease";}};
 
-  if(!loaded)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"inherit"}}>Loading...</div>);
+  if(!loaded)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100dvh",fontFamily:"inherit"}}>Loading...</div>);
 
   // ── Supabase realtime: watch charges + tenants for onboarding pill updates ──
 
@@ -1461,6 +1525,7 @@ export default function Page(){
           return(
           <button key={id} className={`bot-tab ${isActive?"act":""}`}
             onClick={()=>{
+              if(typeof navigator!=="undefined"&&navigator.vibrate)navigator.vibrate(6);
               if(isMore){setSideOpen(s=>!s);}
               else if(isAddExp){setShowAddExpense(true);setSideOpen(false);}
               else{goTab(id);setSideOpen(false);}
@@ -1474,7 +1539,7 @@ export default function Page(){
     {(tab==="ledger"&&!sideOpen&&!showAddExpense)&&<motion.button
       className="bot-fab"
       style={{background:_acc}}
-      onClick={()=>setShowAddExpense(true)}
+      onClick={()=>{if(typeof navigator!=="undefined"&&navigator.vibrate)navigator.vibrate(12);setShowAddExpense(true);}}
       aria-label="Add expense"
       whileTap={{scale:.88}}
       whileHover={{scale:1.08}}
@@ -1488,7 +1553,7 @@ export default function Page(){
     <div className={`mob-overlay ${sideOpen?"show":""}`} onClick={()=>setSideOpen(false)}/>
 
     {/* Sidebar */}
-    <div className={`side ${sideOpen?"open":""}`} style={{zoom:_zoom,height:`calc(100vh / ${_zoom})`}}>
+    <div className={`side ${sideOpen?"open":""}`} style={{zoom:_zoom,height:`calc(100dvh / ${_zoom})`}}>
       <div className="s-logo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight:6,flexShrink:0}}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>{settings.companyName||"Tenantory"} <span>HQ</span></div>
 
       <div className="side-scroll">
@@ -1604,6 +1669,10 @@ export default function Page(){
 
       <div className="s-ft">
         <a href="#">View Public Site</a>
+        <a href="#" onClick={e=>{e.preventDefault();signOut({redirectUrl:"/sign-in"});}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign out{clerkUser?.primaryEmailAddress?.emailAddress?" · "+clerkUser.primaryEmailAddress.emailAddress:""}
+        </a>
       </div>
       </div>{/* end side-scroll */}
 
@@ -1611,7 +1680,7 @@ export default function Page(){
 
     {/* Main */}
     <div className="mn" style={{zoom:_zoom,left:220*_zoom}}>
-      <div className="tbar"><div><h1><span style={{color:"#d4a853",display:"flex",alignItems:"center"}}>{(tabs.find(t=>t.id===tab)||{}).i}</span> {(tabs.find(t=>t.id===tab)||{}).l}</h1><div className="tbar-sub">{MO}</div></div><div id="tbar-morph-slot" style={{display:"flex",alignItems:"center",gap:6,marginLeft:"auto"}}></div></div>
+      <div className="tbar"><div><h1><span style={{color:_acc,display:"flex",alignItems:"center"}}>{(tabs.find(t=>t.id===tab)||{}).i}</span> {(tabs.find(t=>t.id===tab)||{}).l}</h1><div className="tbar-sub">{MO}</div></div><div id="tbar-morph-slot" style={{display:"flex",alignItems:"center",gap:6,marginLeft:"auto"}}></div></div>
       <div className="cnt">
 
       {/* ═══ ONBOARDING ═══ */}
@@ -1662,6 +1731,7 @@ export default function Page(){
         fmtD={fmtD} fmtS={fmtS} getPropDisplayName={getPropDisplayName}
         TODAY={TODAY} MO={MO}
         onSmartImport={()=>setShowSmartImport(true)}
+        goTab={goTab}
       />}
 
       {/* ═══ PORTAL MANAGEMENT ═══ */}
@@ -1821,7 +1891,7 @@ export default function Page(){
               <div className="row-s">{r.owner} · {r.status.replace("-"," ")} · Due {r.due}</div>
             </div>
             <span className={`badge ${r.status==="on-track"||r.status==="done"?"b-green":r.status==="off-track"?"b-red":"b-gray"}`}>{r.status.replace("-"," ")}</span>
-            <button className="btn btn-red btn-sm" onClick={()=>setRocks(p=>p.filter(x=>x.id!==r.id))}>✕</button>
+            <button className="btn btn-red btn-sm" onClick={()=>setRocks(p=>p.filter(x=>x.id!==r.id))} aria-label="Remove"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
         ))}
       </>}
@@ -1832,9 +1902,9 @@ export default function Page(){
           <button className="btn btn-gold" onClick={()=>setIssues(p=>[{id:uid(),title:"New issue",priority:"medium",created:TODAY.toISOString().split("T")[0]},...p])}>+ Add</button></div>
         {issues.map(i=>(
           <div key={i.id} className="row">
-            <span style={{cursor:"pointer",fontSize:14}} onClick={()=>setIssues(p=>p.map(x=>x.id===i.id?{...x,priority:x.priority==="high"?"medium":x.priority==="medium"?"low":"high"}:x))}>{i.priority==="high"?"🔴":i.priority==="medium"?"🟡":"🟢"}</span>
+            <span style={{cursor:"pointer",display:"inline-flex",alignItems:"center"}} onClick={()=>setIssues(p=>p.map(x=>x.id===i.id?{...x,priority:x.priority==="high"?"medium":x.priority==="medium"?"low":"high"}:x))} aria-label={`Priority: ${i.priority}`}><span style={{width:12,height:12,borderRadius:"50%",background:i.priority==="high"?"#c45c4a":i.priority==="medium"?"#d4a853":"#4a7c59",display:"inline-block"}}/></span>
             <div className="row-i"><div className="row-t" contentEditable suppressContentEditableWarning onBlur={e=>setIssues(p=>p.map(x=>x.id===i.id?{...x,title:e.target.textContent}:x))}>{i.title}</div><div className="row-s">{i.created}</div></div>
-            <button className="btn btn-green btn-sm" onClick={()=>setIssues(p=>p.filter(x=>x.id!==i.id))}>✓ Solved</button>
+            <button className="btn btn-green btn-sm" onClick={()=>setIssues(p=>p.filter(x=>x.id!==i.id))} style={{display:"inline-flex",alignItems:"center",gap:4}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Solved</button>
           </div>
         ))}
       </>}
@@ -2222,6 +2292,9 @@ export default function Page(){
   </motion.div></motion.div>}
   </AnimatePresence>
 
+  {/* PWA install prompt — Android one-tap, iOS Add-to-Home-Screen hint */}
+  <PwaInstallPrompt settings={settings} />
+
   {/* Confetti */}
   {showConfetti&&<div className="confetti-wrap">{Array.from({length:60}).map((_,i)=>{const colors=["#d4a853","#4a7c59","#f5f0e8","#c45c4a","#3b82f6"];return(
     <div key={i} className="confetti-piece" style={{left:`${Math.random()*100}%`,background:colors[i%colors.length],width:Math.random()*8+6,height:Math.random()*8+6,borderRadius:Math.random()>0.5?"50%":"2px",animationDuration:`${Math.random()*2+2}s`,animationDelay:`${Math.random()*1.5}s`}}/>
@@ -2229,7 +2302,7 @@ export default function Page(){
 
   {/* New Application Toast */}
   {leadToast&&<div className={`lead-toast ${toastDismissing?"out":""}`}>
-    <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:14,fontWeight:800,color:"#d4a853",letterSpacing:1.5}}>{leadToast.status==="applied"?"NEW APPLICATION!":"NEW LEAD!"}</div></div>
+    <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:14,fontWeight:800,color:_acc,letterSpacing:1.5}}>{leadToast.status==="applied"?"NEW APPLICATION!":"NEW LEAD!"}</div></div>
     <div style={{textAlign:"center",marginBottom:10}}><div style={{fontSize:22,fontWeight:800,color:"#f5f0e8"}}>{leadToast.name}</div></div>
     <div style={{display:"flex",justifyContent:"center",gap:16,fontSize:12,color:"#c4a882",marginBottom:14,flexWrap:"wrap"}}>
       {leadToast.phone&&<span>{leadToast.phone}</span>}

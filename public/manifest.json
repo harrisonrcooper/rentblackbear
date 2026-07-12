@@ -1,7 +1,7 @@
 {
-  "name": "PropOS",
-  "short_name": "PropOS",
-  "description": "Property management admin",
+  "name": "Tenantory",
+  "short_name": "Tenantory",
+  "description": "Property management for landlords — rent, leases, tenants, and accounting in one place.",
   "start_url": "/admin",
   "display": "standalone",
   "background_color": "#1a1714",
@@ -9,16 +9,11 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["business", "productivity", "finance"]
 }

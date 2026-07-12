@@ -1,13 +1,15 @@
 "use client";
 import { useState, useRef } from "react";
+import ConfirmModal from "./ConfirmModal";
 
-// ── Supabase (re-declared for standalone use) ────────────────────────
-const SUPA_URL="https://vxysaclhucdjxzcknoar.supabase.co";
-const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eXNhY2xodWNkanh6Y2tub2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzA5NTEsImV4cCI6MjA4ODg0Njk1MX0.AiAkd5eZZm8ztaUsfGUj-XF7zL_mwCTy7bAGF-mqmoM";
+// Supabase credentials pulled from env (matches the rest of the codebase).
+// The hardcoded values previously here prevented key rotation.
+const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supa=(path,opts={})=>fetch(SUPA_URL+"/rest/v1/"+path,{...opts,headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":opts.prefer||"return=representation",...(opts.headers||{})}});
-const LEASE_TEMPLATE_ID="2d9d0941-2802-468a-a6e8-b2cceacf78d1";
-const leaseObjToRow=(lease)=>({id:lease.id,workspace_id:null,template_id:LEASE_TEMPLATE_ID,tenant_id:lease.tenantEmail||null,room_id:lease.roomId||null,property_id:lease.propertyId||null,variable_data:lease,status:lease.status||"draft",landlord_sig:lease.landlordSignature||lease.landlordSig||null,tenant_sig:lease.tenantSig||null,landlord_signed_at:lease.landlordSignedAt||null,tenant_signed_at:lease.tenantSignedAt||null,signing_token:lease.signingToken||null,signing_link:lease.signingLink||null,pdf_url:lease.pdfUrl||null,updated_at:new Date().toISOString()});
-async function upsertLease(lease){try{await supa("lease_instances",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify(leaseObjToRow(lease))});}catch(e){console.error("Upsert lease error:",e);}}
+import { getDefaultLeaseTemplateId } from "@/lib/leaseTemplate";
+const leaseObjToRow=(lease,templateId)=>({id:lease.id,workspace_id:null,template_id:templateId,tenant_id:lease.tenantEmail||null,room_id:lease.roomId||null,property_id:lease.propertyId||null,variable_data:lease,status:lease.status||"draft",landlord_sig:lease.landlordSignature||lease.landlordSig||null,tenant_sig:lease.tenantSig||null,landlord_signed_at:lease.landlordSignedAt||null,tenant_signed_at:lease.tenantSignedAt||null,signing_token:lease.signingToken||null,signing_link:lease.signingLink||null,pdf_url:lease.pdfUrl||null,updated_at:new Date().toISOString()});
+async function upsertLease(lease){try{const templateId=await getDefaultLeaseTemplateId();await supa("lease_instances",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify(leaseObjToRow(lease,templateId))});}catch(e){console.error("Upsert lease error:",e);}}
 async function patchLease(id,updates){try{await supa("lease_instances?id=eq."+id,{method:"PATCH",prefer:"resolution=merge-duplicates",body:JSON.stringify({...updates,updated_at:new Date().toISOString()})});}catch(e){console.error("Patch lease error:",e);}}
 async function deleteLeaseInDB(id){try{await supa("lease_instances?id=eq."+id,{method:"DELETE"});}catch(e){console.error("Delete lease error:",e);}}
 
@@ -66,7 +68,12 @@ export default function LeaseModal({
   setLeaseSubTab,
 }){
   const[leaseSigErr,setLeaseSigErr]=useState(false);
+  const[confirmClose,setConfirmClose]=useState(false);
   const _acc=(settings?.adminAccent)||"#4a7c59";
+
+  // Guarded close — prompts before throwing away in-progress edits. Cancel button
+  // bypasses (explicit intent); only backdrop tap goes through the prompt.
+  const requestClose = () => setConfirmClose(true);
 
   const _triggerLeaseWiggle=(errs)=>{
     setLeaseForm(p=>p?({...p,_errors:errs}):p);
@@ -186,7 +193,7 @@ export default function LeaseModal({
 
   const deleteLease=id=>{setLeases(p=>{const updated=p.filter(l=>l.id!==id);deleteLeaseInDB(id);return updated;});};
   return(<>
-  {leaseForm&&<div className="mbg" onClick={()=>setLeaseForm(null)}><div className="mbox lease-modal-box" onClick={e=>e.stopPropagation()} style={{maxWidth:660}}>
+  {leaseForm&&<div className="mbg" onClick={requestClose}><div className="mbox lease-modal-box" onClick={e=>e.stopPropagation()} style={{maxWidth:660}}>
     <h2>{leaseForm.id?"Edit Lease":"Create New Lease"}</h2>
     <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>All fields auto-populate from the application or property settings. Edit anything before saving.</div>
 
@@ -793,7 +800,7 @@ export default function LeaseModal({
 
             <div style={{background:"rgba(74,124,89,.06)",borderRadius:10,padding:12,marginBottom:14}}>
               <div style={{fontSize:11,fontWeight:700,color:"#2d6a3f",marginBottom:8}}>
-                {modal.landlordSig?"✓ Signature Captured":"Draw Your Signature — "+(modal.lease?.landlordName||settings.pmName||"")}
+                {modal.landlordSig?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Signature Captured</span>:"Draw Your Signature \u2014 "+(modal.lease?.landlordName||settings.pmName||"")}
               </div>
               {modal.landlordSig
                 ?<div>
@@ -912,5 +919,17 @@ export default function LeaseModal({
             <button className="btn btn-gold" onClick={()=>setModal(null)}>Done</button>
           </div>
         </div></div>}
+
+        <ConfirmModal
+          open={confirmClose}
+          title="Leave without saving?"
+          message="Your lease changes haven't been saved. Close and lose them?"
+          confirmLabel="Leave"
+          cancelLabel="Keep editing"
+          destructive={false}
+          onConfirm={()=>{setConfirmClose(false);setLeaseForm(null);}}
+          onCancel={()=>setConfirmClose(false)}
+          accent={_acc}
+        />
   </>);
 }

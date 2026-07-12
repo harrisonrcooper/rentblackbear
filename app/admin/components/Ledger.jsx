@@ -1425,7 +1425,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
       {/* ═══ MANAGE MODALS ═══ */}
       {manageModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 0 }} onClick={() => setManageModal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: "16px 16px 0 0", maxWidth: 500, width: "100%", maxHeight: "90vh", overflowY: "auto", display: "flex", flexDirection: "column", boxShadow: "0 16px 48px rgba(0,0,0,.2)" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: "16px 16px 0 0", maxWidth: 500, width: "100%", display: "flex", flexDirection: "column", boxShadow: "0 16px 48px rgba(0,0,0,.2)" }}>
 
             {/* Manage Subcategories */}
             {manageModal === "subcats" && (() => {

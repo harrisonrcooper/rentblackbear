@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { supa } from "@/lib/supabase-client";
+import { getDefaultLeaseTemplateId } from "@/lib/leaseTemplate";
 
 export default function ApplicationsTab({
   apps, setApps, props: properties, settings, setSettings, charges, leases, setLeases, archive,
@@ -188,7 +189,7 @@ export default function ApplicationsTab({
   // PM can always manually advance (skip conditions).
   // ══════════════════════════════════════════════════════════════
 
-  const LEASE_TEMPLATE_ID = "2d9d0941-2802-468a-a6e8-b2cceacf78d1";
+  // Template id resolved at runtime via lib/leaseTemplate.js (see creation block below).
   const todayStr = TODAY.toISOString().split("T")[0];
   const autoAdvanceRef = useRef(false);
   const leaseCreatingRef = useRef(new Set()); // dedup: track app IDs with lease creation in flight
@@ -258,7 +259,7 @@ export default function ApplicationsTab({
       await supa("lease_instances", {
         method: "POST", prefer: "resolution=merge-duplicates",
         body: JSON.stringify({
-          id: leaseId, workspace_id: null, template_id: LEASE_TEMPLATE_ID,
+          id: leaseId, workspace_id: null, template_id: await getDefaultLeaseTemplateId(),
           tenant_id: app.email || null, room_id: app.termRoomId || null, property_id: app.termPropId || null,
           variable_data: {
             id: leaseId, applicationId: app.id, tenantName: app.name, tenantEmail: app.email, tenantPhone: app.phone,
@@ -842,7 +843,7 @@ export default function ApplicationsTab({
                           el.style.background=p.state==="done"?"rgba(74,124,89,.15)":p.state==="pending"?"rgba(212,168,83,.15)":"rgba(0,0,0,.05)";
                           el.style.color=p.state==="done"?_green:p.state==="pending"?_gold:"#aaa";
                         }}>
-                        {p.state==="done"?"✓ ":p.state==="pending"?"⋯ ":""}{p.label}
+                        <span style={{display:"inline-flex",alignItems:"center",gap:4}}>{p.state==="done"?<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>:p.state==="pending"?<span aria-hidden="true">...</span>:null}{p.label}</span>
                       </div>);
                     })}
                   </div>

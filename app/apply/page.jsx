@@ -106,8 +106,8 @@ const CSS=`
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 :root{--dk:#1a1714;--cr:#f5f0e8;--ac:#d4a853;--mt:#c4a882;--gn:#4a7c59;--rd:#c45c4a;--bg:#faf9f7}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d3529;-webkit-font-smoothing:antialiased}
-.app-wrap{min-height:100vh;display:flex;flex-direction:column}
+body{font-family:var(--font-jakarta),'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:#3d3529;-webkit-font-smoothing:antialiased}
+.app-wrap{min-height:100dvh;display:flex;flex-direction:column}
 .app-header{background:var(--dk);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
 .app-logo{color:var(--cr);font-family:'DM Serif Display',serif;font-size:16px;display:flex;align-items:center;gap:8px}
 .app-logo span{color:var(--ac)}
@@ -543,11 +543,11 @@ export default function ApplyPage(){
     if(f._editIdx!==undefined){setD(p=>({...p,employers:p.employers.map((e,i)=>i===f._editIdx?f:e),curEmployerForm:null}));}
     else{setD(p=>({...p,employers:[...p.employers,f],curEmployerForm:null}));}};
 
-  if(loading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",fontFamily:"'Plus Jakarta Sans',sans-serif",color:"#999"}}><div style={{textAlign:"center"}}><div style={{marginBottom:8}}><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="13" r="7"/><circle cx="5" cy="7" r="3"/><circle cx="19" cy="7" r="3"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="12" r="1" fill="currentColor"/><path d="M10 15.5s.8 1 2 1 2-1 2-1"/></svg></div>Loading your application...</div></div>);
+  if(loading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100dvh",fontFamily:"'Plus Jakarta Sans',sans-serif",color:"#999"}}><div style={{textAlign:"center"}}><div style={{marginBottom:8}}><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="13" r="7"/><circle cx="5" cy="7" r="3"/><circle cx="19" cy="7" r="3"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="12" r="1" fill="currentColor"/><path d="M10 15.5s.8 1 2 1 2-1 2-1"/></svg></div>Loading your application...</div></div>);
   if(submitted)return(<><style>{CSS}</style><div className="app-wrap"><div className="app-header"><div className="app-logo">Tenantory</div></div><div className="app-body"><div className="submitted"><div className="submitted-ic"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg></div><h1>Application Submitted!</h1><p>Thanks, {d.firstName}! We've received your application and screening payment. We'll review everything and get back to you within 24-48 hours.</p><div style={{marginTop:24,padding:16,background:"rgba(74,124,89,.06)",borderRadius:12,fontSize:12,color:"#4a7c59"}}><strong>What happens next?</strong><br/>1. Your background check and credit report are processing<br/>2. We'll review your application and references<br/>3. You'll receive an email with our decision<br/>4. If approved, we'll send your lease for e-signing</div></div></div><div className="app-footer">© {new Date().getFullYear()} Tenantory</div></div></>);
 
   return(<><style>{CSS}</style><div className="app-wrap">
-    <div className="app-header"><div className="app-logo">Tenantory</div>{step!=="welcome"&&step!=="done"&&<div className="app-save">{saving?<><div className="dot"/>Saving...</>:"✓ Saved"}</div>}</div>
+    <div className="app-header"><div className="app-logo">Tenantory</div>{step!=="welcome"&&step!=="done"&&<div className="app-save">{saving?<><div className="dot"/>Saving...</>:<span style={{display:"inline-flex",alignItems:"center",gap:4}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Saved</span>}</div>}</div>
     <div className="app-body">
       {step!=="welcome"&&step!=="done"&&<><div className="prog">{steps.filter(s=>s!=="welcome"&&s!=="done").map((s,i)=>{const si=steps.indexOf(s);return<div key={s} className={`prog-seg ${si<stepIdx?"done":si===stepIdx?"cur":""}`}/>;})}</div><div className="prog-label">Step {stepIdx} of {steps.length-2} · {LABELS[step]}</div></>}
 
@@ -832,7 +832,7 @@ export default function ApplyPage(){
         </div>
         :<div className="add-card" onClick={()=>upd("curAddressForm",{...blankAddr})}><div className="plus">+</div><div className="lbl">Add {d.addresses.length===0?"Current":"Another"} Address</div></div>}
         {d.addresses.length>0&&(()=>{const months=calcMonthsCovered(d.addresses);const pct=Math.min(100,Math.round(months/24*100));const ok=months>=24;return(<div style={{marginBottom:10,padding:"8px 12px",borderRadius:8,background:ok?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",border:`1px solid ${ok?"rgba(74,124,89,.2)":"rgba(212,168,83,.25)"}`,fontSize:11,color:ok?"#2d6a3f":"#7a5a10",display:"flex",alignItems:"center",gap:10}}>
-          <div style={{flex:1}}>{ok?"✓ 2-year history requirement met":`${months} of 24 months covered — please add more addresses`}</div>
+          <div style={{flex:1,display:"flex",alignItems:"center",gap:5}}>{ok?<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>2-year history requirement met</>:`${months} of 24 months covered — please add more addresses`}</div>
           <div style={{width:80,height:6,borderRadius:3,background:"rgba(0,0,0,.08)",overflow:"hidden"}}><div style={{width:pct+"%",height:"100%",background:ok?"#4a7c59":"#d4a853",borderRadius:3,transition:"width .3s"}}/></div>
         </div>);})()}
         {errors.addresses&&<div className="err-msg" style={{marginBottom:12,fontSize:13,fontWeight:700,padding:"10px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,animation:"shake .4s ease"}}>{errors.addresses}</div>}

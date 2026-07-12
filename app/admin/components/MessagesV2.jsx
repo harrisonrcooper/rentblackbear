@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
+import ConfirmModal from "./ConfirmModal";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -99,6 +100,7 @@ const S = {
 export default function MessagesV2({ settings, properties, charges, maintenance: maintRequests, leases, maint, setMaint, save, uid }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirmModal, setConfirmModal] = useState(null);
   const [selectedThread, setSelectedThread] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
@@ -420,7 +422,19 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
     else if (cmd === "/assign") setShowAssignMenu(true);
     else if (cmd === "/star") setStarredThreads(prev => { const n = new Set(prev); if (n.has(selectedThread)) n.delete(selectedThread); else n.add(selectedThread); return n; });
     else if (cmd === "/pin") setPinnedThreads(prev => { const n = new Set(prev); if (n.has(selectedThread)) n.delete(selectedThread); else n.add(selectedThread); return n; });
-    else if (cmd === "/archive") { if (window.confirm("Archive this conversation?")) { setArchivedThreads(prev => { const n = new Set(prev); n.add(selectedThread); return n; }); setSelectedThread(null); } }
+    else if (cmd === "/archive") {
+      setConfirmModal({
+        title: "Archive conversation?",
+        message: "This conversation will be hidden from the main list. You can recover it from the Archived filter.",
+        confirmLabel: "Archive",
+        destructive: false,
+        onConfirm: () => {
+          setArchivedThreads(prev => { const n = new Set(prev); n.add(selectedThread); return n; });
+          setSelectedThread(null);
+          setConfirmModal(null);
+        },
+      });
+    }
     else if (cmd === "/remind") executeSlashCommand("/remind");
     else if (cmd === "/lease") executeSlashCommand("/lease");
   };
@@ -914,7 +928,23 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       )}
                     </div>
                     {/* Archive */}
-                    <button className="msg-header-btn" data-tip={archivedThreads.has(selectedThread) ? "Unarchive" : "Archive"} onClick={() => { if (archivedThreads.has(selectedThread)) { setArchivedThreads(prev => { const next = new Set(prev); next.delete(selectedThread); return next; }); } else if (window.confirm("Archive this conversation with " + activeThread.tenantName + "? You can find it in the Archived filter.")) { setArchivedThreads(prev => { const next = new Set(prev); next.add(selectedThread); return next; }); setSelectedThread(null); } }} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: archivedThreads.has(selectedThread) ? "rgba(0,0,0,.06)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                    <button className="msg-header-btn" data-tip={archivedThreads.has(selectedThread) ? "Unarchive" : "Archive"} onClick={() => {
+                      if (archivedThreads.has(selectedThread)) {
+                        setArchivedThreads(prev => { const next = new Set(prev); next.delete(selectedThread); return next; });
+                        return;
+                      }
+                      setConfirmModal({
+                        title: "Archive this conversation?",
+                        message: `Archive the thread with ${activeThread.tenantName}. You can recover it from the Archived filter.`,
+                        confirmLabel: "Archive",
+                        destructive: false,
+                        onConfirm: () => {
+                          setArchivedThreads(prev => { const next = new Set(prev); next.add(selectedThread); return next; });
+                          setSelectedThread(null);
+                          setConfirmModal(null);
+                        },
+                      });
+                    }} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: archivedThreads.has(selectedThread) ? "rgba(0,0,0,.06)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
                     </button>
                     {/* Info */}
@@ -978,7 +1008,16 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                               <button className="msg-action-btn" onClick={e => { e.stopPropagation(); setEditingMsg(msg.id); setEditMsgText(msg.body || ""); }} title="Edit" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               </button>
-                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); if (window.confirm("Delete this message? This cannot be undone.")) deleteMsg(msg.id); }} title="Delete" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
+                              <button className="msg-action-btn" onClick={e => {
+                                e.stopPropagation();
+                                setConfirmModal({
+                                  title: "Delete this message?",
+                                  message: "This will permanently remove the message from the conversation. This cannot be undone.",
+                                  confirmLabel: "Delete",
+                                  destructive: true,
+                                  onConfirm: () => { deleteMsg(msg.id); setConfirmModal(null); },
+                                });
+                              }} title="Delete" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               </button>
                             </div>
@@ -1381,6 +1420,16 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
         </div>
       )}
       </div>{/* end outer */}
+      <ConfirmModal
+        open={!!confirmModal}
+        title={confirmModal?.title}
+        message={confirmModal?.message}
+        confirmLabel={confirmModal?.confirmLabel}
+        destructive={confirmModal?.destructive}
+        onConfirm={confirmModal?.onConfirm}
+        onCancel={() => setConfirmModal(null)}
+        accent={settings?.adminAccent}
+      />
     </>
   );
 }

@@ -1393,7 +1393,7 @@ export default function ModalRenderer({
               <button className="btn btn-gold" style={{flex:2}} onClick={()=>{
                 setSettings(s=>({...s,reminderTemplate:reminderMsg}));
                 setModal(prev=>({...prev,editingDefault:false,reminderMsg:undefined}));
-              }}>💾 Save as Default</button>
+              }}><span style={{display:"inline-flex",alignItems:"center",gap:6}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Save as Default</span></button>
             </div>
           </>
           :<textarea value={reminderMsg} onChange={e=>setModal(prev=>({...prev,reminderMsg:e.target.value}))} rows={5} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:`1px solid ${isEdited?"rgba(212,168,83,.3)":"rgba(0,0,0,.08)"}`,fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6}}/>
@@ -1677,7 +1677,7 @@ export default function ModalRenderer({
             onDragLeave={e=>{e.currentTarget.style.borderColor="rgba(0,0,0,.1)";}}
             onDrop={e=>{e.preventDefault();e.currentTarget.style.borderColor="rgba(0,0,0,.1)";const file=e.dataTransfer.files[0];if(file)upd("receiptFile",file);}}>
             <label style={{cursor:"pointer",display:"block"}}>
-              <div style={{fontSize:12,color:"#7a7067",marginBottom:4}}>📎 Click or drag to attach receipt</div>
+              <div style={{fontSize:12,color:"#7a7067",marginBottom:4,display:"inline-flex",alignItems:"center",gap:6}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>Click or drag to attach receipt</div>
               <div style={{fontSize:10,color:"#7a7067"}}>Photo, screenshot, or PDF</div>
               <input type="file" accept="image/*,.pdf" capture="environment" style={{display:"none"}} onChange={e=>{const file=e.target.files[0];if(file)upd("receiptFile",file);}}/>
             </label>
@@ -1704,9 +1704,9 @@ export default function ModalRenderer({
               setModal(p=>({...p,_scanning:false,_scanErr:data.error||"Could not read receipt"}));
             }
           }catch(err){setModal(p=>({...p,_scanning:false,_scanErr:"Scan failed: "+err.message}));}
-        }}>🔍 Scan receipt with AI — auto-fill fields</button>}
-        {modal._scanning&&<div style={{marginTop:6,fontSize:11,color:"#9a7422",display:"flex",alignItems:"center",gap:6}}><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⏳</span> Reading receipt...</div>}
-        {modal._scanned&&<div style={{marginTop:6,fontSize:11,color:"#4a7c59",fontWeight:600}}>✓ Fields auto-filled from receipt. Review and adjust if needed.</div>}
+        }}><span style={{display:"inline-flex",alignItems:"center",gap:6}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Scan receipt with AI \u2014 auto-fill fields</span></button>}
+        {modal._scanning&&<div style={{marginTop:6,fontSize:11,color:"#9a7422",display:"flex",alignItems:"center",gap:6}}><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M5 2h14"/><path d="M5 22h14"/><path d="M5 2v4a7 7 0 0 0 14 0V2"/><path d="M5 22v-4a7 7 0 0 1 14 0v4"/></svg></span> Reading receipt...</div>}
+        {modal._scanned&&<div style={{marginTop:6,fontSize:11,color:"#4a7c59",fontWeight:600,display:"flex",alignItems:"center",gap:4}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Fields auto-filled from receipt. Review and adjust if needed.</div>}
         {modal._scanErr&&<div className="err-msg" style={{marginTop:4}}>{modal._scanErr}</div>}
       </div>
 
@@ -1937,7 +1937,7 @@ export default function ModalRenderer({
     };
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
-      <h2>{isEdit?"✏️ Edit Mortgage":"🏦 Add Mortgage"}</h2>
+      <h2 style={{display:"inline-flex",alignItems:"center",gap:8}}>{isEdit?<><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Edit Mortgage</>:<><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7-5 7 5v11"/><path d="M9 21v-6"/><path d="M15 21v-6"/></svg>Add Mortgage</>}</h2>
       <div className="fr3">
         <div className="fld" style={{gridColumn:"span 2"}}><label style={{color:errs.propId?"#c45c4a":undefined}}>Property *</label>
           <select value={f.propId||""} onChange={e=>upd("propId",e.target.value)} style={{borderColor:errs.propId?"#c45c4a":undefined}}>
@@ -1966,7 +1966,7 @@ export default function ModalRenderer({
   {/* ── Delete Mortgage ── */}
   {modal&&modal.type==="deleteMortgage"&&(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:380}}>
-      <h2>🗑 Remove Mortgage?</h2>
+      <h2 style={{display:"inline-flex",alignItems:"center",gap:8}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Remove Mortgage?</h2>
       <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}>Remove <strong>{modal.lender}</strong> from the register? This affects DSCR calculations.</p>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
         <button className="btn btn-red" onClick={()=>{setMortgages(p=>p.filter(m=>m.id!==modal.mgId));setModal(null);}}>Remove</button></div>
@@ -1977,7 +1977,7 @@ export default function ModalRenderer({
     const backToTenant=()=>{if(modal._fromTenant&&modal._tenantRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:modal._tenantRoom});}else setModal(null);};
     return(
     <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
-      <h2>🗑 Delete Charge?</h2>
+      <h2 style={{display:"inline-flex",alignItems:"center",gap:8}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Delete Charge?</h2>
       <div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.12)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
         <div style={{fontWeight:700,marginBottom:2}}>{modal.tenantName}</div>
         <div style={{color:"#6b5e52"}}>{modal.category} — {modal.desc}</div>
@@ -2442,7 +2442,7 @@ export default function ModalRenderer({
     const confirmMatch=(modal.confirm||"").toUpperCase()==="DELETE";
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
-      <h2>🗑 Clear Ledger — {modal.tenant}</h2>
+      <h2 style={{display:"inline-flex",alignItems:"center",gap:8}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Clear Ledger \u2014 {modal.tenant}</h2>
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,margin:"14px 0"}}>
         <div style={{background:"rgba(196,92,74,.06)",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:800,color:"#c45c4a"}}>{outstanding.length}</div><div style={{fontSize:9,color:"#6b5e52",marginTop:2}}>Outstanding</div></div>
         <div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{paid.length}</div><div style={{fontSize:9,color:"#6b5e52",marginTop:2}}>Paid</div></div>
@@ -2625,21 +2625,21 @@ export default function ModalRenderer({
         };
         return(<>
           <div style={{textAlign:"center",padding:"14px 0 8px"}}>
-            <div style={{fontSize:32,marginBottom:8}}>✅</div>
+            <div style={{marginBottom:8,color:"#4a7c59",display:"flex",justifyContent:"center"}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
             <div style={{fontSize:16,fontWeight:800,color:"#4a7c59",marginBottom:4}}>Payment Recorded</div>
             <div style={{fontFamily:"monospace",fontSize:13,fontWeight:700,color:"#5c4a3a",background:"rgba(0,0,0,.04)",padding:"6px 14px",borderRadius:6,display:"inline-block"}}>{modal.confId}</div>
           </div>
           <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:14,marginBottom:14,fontSize:12}}>
-            {[["Tenant",selCh.tenantName],["Charge",`${selCh.category} — ${selCh.desc}`],["Amount",fmtS(modal.payAmount)],["Method",modal.payMethod],["Date",fmtD(modal.payDate)],["Status",modal.isTransit?"🟡 In Transit":"✅ Deposited"]].map(([l,v])=>(
+            {[["Tenant",selCh.tenantName],["Charge",`${selCh.category} \u2014 ${selCh.desc}`],["Amount",fmtS(modal.payAmount)],["Method",modal.payMethod],["Date",fmtD(modal.payDate)],["Status",modal.isTransit?<span style={{display:"inline-flex",alignItems:"center",gap:4}}><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#d4a853"}}/>In Transit</span>:<span style={{display:"inline-flex",alignItems:"center",gap:4,color:"#4a7c59"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Deposited</span>]].map(([l,v])=>(
               <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{color:"#6b5e52"}}>{l}</span><strong>{v}</strong></div>
             ))}
           </div>
-          <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.1)",borderRadius:8,padding:10,marginBottom:14,fontSize:11,color:"#3b82f6"}}>
-            📧 Receipt automatically emailed to {tenant?tenant.email:"tenant"} · Also visible in their tenant portal
+          <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.1)",borderRadius:8,padding:10,marginBottom:14,fontSize:11,color:"#3b82f6",display:"flex",alignItems:"center",gap:6}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>Receipt automatically emailed to {tenant?tenant.email:"tenant"} \u00B7 Also visible in their tenant portal
           </div>
           <div className="mft">
             <button className="btn btn-out" onClick={backToTenant}>Done</button>
-            <button className="btn btn-gold" onClick={printReceipt}>🖨 Print / Save PDF</button>
+            <button className="btn btn-gold" onClick={printReceipt} style={{display:"inline-flex",alignItems:"center",gap:6}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / Save PDF</button>
           </div>
         </>);
       })()}
@@ -2825,7 +2825,7 @@ export default function ModalRenderer({
     };
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
-      <h2>📞 Add Lead Manually</h2>
+      <h2 style={{display:"inline-flex",alignItems:"center",gap:8}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/></svg>Add Lead Manually</h2>
       <p style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Add someone who contacted you directly. They'll be placed in the <strong>Called / Follow Up</strong> stage and you can invite them to apply from there.</p>
       <div className={`fld ${errs.name?"field-err":""}`}>
         <label className={errs.name?"field-err-label":""}>Full Name *</label>
@@ -3015,12 +3015,12 @@ export default function ModalRenderer({
   {/* ── Add Lead Done — offer to invite immediately ── */}
   {modal&&modal.type==="addLeadDone"&&(()=>{const lead=modal.lead;return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center",padding:28}}>
-      <div style={{fontSize:36,marginBottom:8}}>✅</div>
+      <div style={{marginBottom:8,color:"#4a7c59",display:"flex",justifyContent:"center"}}><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
       <h2 style={{color:"#4a7c59",marginBottom:6}}>{lead.name} Added!</h2>
       <p style={{fontSize:12,color:"#6b5e52",marginBottom:20}}>They're now in the <strong>Called / Follow Up</strong> stage. Want to invite them to apply right now?</p>
       <div style={{display:"flex",gap:8,justifyContent:"center"}}>
         <button className="btn btn-out" onClick={()=>setModal(null)}>Not Yet</button>
-        <button className="btn btn-gold" onClick={()=>setModal({type:"inviteApp",data:lead})}>✉️ Invite to Apply →</button>
+        <button className="btn btn-gold" onClick={()=>setModal({type:"inviteApp",data:lead})} style={{display:"inline-flex",alignItems:"center",gap:6}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>Invite to Apply \u2192</button>
       </div>
     </div></div>);
   })()}
@@ -3031,7 +3031,7 @@ export default function ModalRenderer({
     return(
     <div className="mbg" style={{pointerEvents:"none",background:"transparent"}} onClick={()=>setModal(null)}>
       <div style={{position:"fixed",bottom:32,left:"50%",transform:"translateX(-50%)",background:"#1a1714",color:"#f5f0e8",padding:"12px 24px",borderRadius:100,fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 24px rgba(0,0,0,.2)",animation:"fadeIn .2s",pointerEvents:"none"}}>
-        ✓ Link copied to clipboard
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Link copied to clipboard
       </div>
     </div>);
   })()}
@@ -3082,8 +3082,8 @@ export default function ModalRenderer({
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <h2 style={{margin:0}}>📝 Lease Addendum</h2>
-        <button className="btn btn-gold btn-sm" onClick={printDoc}>🖨️ Print / Download PDF</button>
+        <h2 style={{margin:0,display:"inline-flex",alignItems:"center",gap:8}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Lease Addendum</h2>
+        <button className="btn btn-gold btn-sm" onClick={printDoc} style={{display:"inline-flex",alignItems:"center",gap:6}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / Download PDF</button>
       </div>
 
       <div style={{background:"#faf9f7",border:"1px solid rgba(0,0,0,.06)",borderRadius:10,padding:16,marginBottom:14}}>
@@ -3117,7 +3117,7 @@ export default function ModalRenderer({
         This addendum modifies the original lease. All other terms remain in full effect. Effective on the date listed above upon signature by both parties.
       </div>
 
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button><button className="btn btn-gold" onClick={printDoc}>🖨️ Print / Save as PDF</button></div>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button><button className="btn btn-gold" onClick={printDoc} style={{display:"inline-flex",alignItems:"center",gap:6}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / Save as PDF</button></div>
     </div></div>);
   })()}
 
@@ -3132,7 +3132,7 @@ export default function ModalRenderer({
     const stripeReady=typeof window!=="undefined"&&window.__STRIPE_KEY__;
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}}>
-      <h2>💳 Pay Online</h2>
+      <h2 style={{display:"inline-flex",alignItems:"center",gap:8}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Pay Online</h2>
       <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Select a charge to pay. Both ACH bank transfer and credit/debit card accepted.</div>
       {upcoming.map(c=>{
         const rem=c.amount-c.amountPaid;
@@ -3157,7 +3157,7 @@ export default function ModalRenderer({
                   window.open(`https://checkout.stripe.com/pay/${d.clientSecret}#ach`,"_blank");
                 }else{showAlert({title:"Payment Setup Failed",body:"Please contact your property manager to complete payment setup."});}
               }catch(e){showAlert({title:"Payment Unavailable",body:"Online payment is not available right now. Please pay via Zelle or contact us directly."});}
-            }}>🏦 ACH Bank Transfer</button>
+            }}><span style={{display:"inline-flex",alignItems:"center",gap:6}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7-5 7 5v11"/><path d="M9 21v-6"/><path d="M15 21v-6"/></svg>ACH Bank Transfer</span></button>
             <button className="btn btn-gold btn-sm" style={{flex:1}} onClick={async()=>{
               try{
                 const r=await fetch("/api/stripe/create-payment-intent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chargeId:c.id,amount:rem,tenantName:tenant?.name||c.tenantName,tenantEmail:tenant?.email||"",method:"card",roomId:c.roomId||tenant?.room_id||"",propName:c.propName||tenant?.property?.name||""})});
@@ -3165,7 +3165,7 @@ export default function ModalRenderer({
                 if(d.clientSecret){window.open(`https://checkout.stripe.com/pay/${d.clientSecret}`,"_blank");}
                 else{showAlert({title:"Payment Setup Failed",body:"Please contact your property manager to complete payment setup."});}
               }catch(e){showAlert({title:"Payment Unavailable",body:"Online payment is not available right now. Please pay via Zelle or contact us directly."});}
-            }}>💳 Credit / Debit Card</button>
+            }}><span style={{display:"inline-flex",alignItems:"center",gap:6}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Credit / Debit Card</span></button>
           </div>
         </div>);
       })}
@@ -3207,7 +3207,7 @@ export default function ModalRenderer({
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:580}}>
       {modal.bulkSent?<div style={{textAlign:"center",padding:20}}>
-        <div style={{fontSize:36,marginBottom:8}}>✓</div>
+        <div style={{marginBottom:8,color:"#4a7c59",display:"flex",justifyContent:"center"}}><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
         <h2 style={{color:"#4a7c59"}}>Invites Sent!</h2>
         <p style={{fontSize:12,color:"#6b5e52",marginTop:4}}>{targets.length} applicants moved to Invited.</p>
         <button className="btn btn-gold" style={{marginTop:16,width:"100%"}} onClick={()=>setModal(null)}>Done</button>
@@ -3262,7 +3262,7 @@ export default function ModalRenderer({
           <strong>${totalAll}</strong>
         </div>
         <div className="fld"><label>Note (sent to all)</label><textarea value={modal.bulkNote||""} onChange={e=>setModal(prev=>({...prev,bulkNote:e.target.value}))} placeholder="Optional personal note..." rows={2}/></div>
-        {modal.bulkError&&<div style={{background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.2)",borderRadius:6,padding:8,fontSize:10,color:"#c45c4a",marginBottom:8}}>⚠ {modal.bulkError}</div>}
+        {modal.bulkError&&<div style={{background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.2)",borderRadius:6,padding:8,fontSize:10,color:"#c45c4a",marginBottom:8,display:"flex",alignItems:"center",gap:6}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>{modal.bulkError}</div>}
         <div className="mft">
           <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
           <button className="btn btn-gold" onClick={sendAll}>Send {targets.length} Invite{targets.length>1?"s":""}</button>
@@ -3565,7 +3565,7 @@ export default function ModalRenderer({
             <div style={{fontFamily:"serif",fontSize:15,color:"#f5f0e8",fontWeight:700}}>Lease Preview</div>
             <div style={{fontSize:10,color:"#c4a882",marginTop:2}}>Read-only · Variables substituted · Go back to edit</div>
           </div>
-          <button className="btn btn-out btn-sm" style={{color:"#f5f0e8",borderColor:"rgba(255,255,255,.2)"}} onClick={()=>setModal(p=>({...p,previewLeaseOpen:false}))}>✕ Close</button>
+          <button className="btn btn-out btn-sm" style={{color:"#f5f0e8",borderColor:"rgba(255,255,255,.2)",display:"inline-flex",alignItems:"center",gap:6}} onClick={()=>setModal(p=>({...p,previewLeaseOpen:false}))}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Close</button>
         </div>
 
         <div style={{padding:28}}>
@@ -3592,7 +3592,7 @@ export default function ModalRenderer({
               <div style={{fontSize:9,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:1.5,marginBottom:4}}>Section {idx+1}</div>
               <div style={{fontFamily:"serif",fontSize:17,color:"#1a1714",marginBottom:10}}>{sec.title}</div>
               <div style={{fontSize:13,color:"#3d3529",lineHeight:1.8}} dangerouslySetInnerHTML={{__html:(sec.content||"").replace(/\{\{([^}]+)\}\}/g,(_,key)=>{const v=(modal.previewVars||{})[key.trim()];return v!==undefined?`<span style="color:#1a1714;font-weight:700;background:rgba(212,168,83,.1);padding:0 3px;border-radius:3px">${v}</span>`:`<span style="color:#c45c4a">{{${key}}}</span>`;})}}/>
-              {sec.requiresInitials&&<div style={{marginTop:14,padding:"8px 12px",background:"rgba(212,168,83,.05)",border:"1px dashed rgba(212,168,83,.3)",borderRadius:8,fontSize:10,color:"#9a7422",fontWeight:600}}>⚠ Tenant initials required for this section</div>}
+              {sec.requiresInitials&&<div style={{marginTop:14,padding:"8px 12px",background:"rgba(212,168,83,.05)",border:"1px dashed rgba(212,168,83,.3)",borderRadius:8,fontSize:10,color:"#9a7422",fontWeight:600,display:"flex",alignItems:"center",gap:6}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Tenant initials required for this section</div>}
             </div>
           ))}
 
@@ -4273,7 +4273,7 @@ ${providerName||"(not specified)"}${providerAddress?"<br/>"+providerAddress:""}$
           let label=(item.unitLabel&&!item.isWholeUnit?"Unit "+item.unitLabel+" — ":"")+item.name+(item.isWholeUnit&&item.name!=="Whole Unit"?" (Whole Unit)":"")+propPart+" — "+fmtS(item.id===(a.termRoomId||termItem?.id)?termRent:item.rent)+"/mo";
           if(!ready)label+=" · Available now";
           else label+=" · Available "+fmtD(ready)+" (lease ends "+fmtD(item.le)+")";
-          if(moveInDate&&ready&&moveInDate<item.le)label+=" ⚠ lease overlap";
+          if(moveInDate&&ready&&moveInDate<item.le)label+=" \u2014 lease overlap";
           return label;
         };
 
@@ -5109,7 +5109,7 @@ ${providerName||"(not specified)"}${providerAddress?"<br/>"+providerAddress:""}$
               </div>
               {isUploaded&&<div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
                 <button onClick={()=>setDocVerified(doc.id,"verified")} style={{fontSize:9,padding:"3px 9px",borderRadius:5,border:"1px solid rgba(74,124,89,.3)",background:vStatus==="verified"?"#4a7c59":"#fff",color:vStatus==="verified"?"#fff":"#4a7c59",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all .15s"}}>
-                  {vStatus==="verified"?"✓ Verified":"Verify"}
+                  {vStatus==="verified"?<span style={{display:"inline-flex",alignItems:"center",gap:3}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Verified</span>:"Verify"}
                 </button>
                 <button onClick={()=>{setDocVerified(doc.id,"rejected");requestReupload(doc.label,doc.type);}} style={{fontSize:9,padding:"3px 9px",borderRadius:5,border:"1px solid rgba(196,92,74,.25)",background:vStatus==="rejected"?"#c45c4a":"#fff",color:vStatus==="rejected"?"#fff":"#c45c4a",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all .15s"}}>
                   Reject & Request Re-Upload
@@ -5370,14 +5370,14 @@ ${providerName||"(not specified)"}${providerAddress?"<br/>"+providerAddress:""}$
                     {rc.email&&<button onClick={rc.draftFn} style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:5,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Email →</button>}
                     {!rc.verified
                       ?<button onClick={()=>setRefVerified(rc.key,true)} style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:5,border:"1px solid rgba(74,124,89,.3)",background:"#fff",color:"#4a7c59",cursor:"pointer",fontFamily:"inherit"}}>Verify</button>
-                      :<button onClick={()=>setRefVerified(rc.key,false)} style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:5,border:"none",background:"#4a7c59",color:"#fff",cursor:"pointer",fontFamily:"inherit"}}>✓ Verified</button>
+                      :<button onClick={()=>setRefVerified(rc.key,false)} style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:5,border:"none",background:"#4a7c59",color:"#fff",cursor:"pointer",fontFamily:"inherit",display:"inline-flex",alignItems:"center",gap:3}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Verified</button>
                     }
                   </div>
                   </div>
                   {rc.replies.map((r,i)=>(
                     <div key={r.id||i} style={{marginLeft:24,marginTop:4,padding:"7px 10px",background:r.auto?"rgba(59,130,246,.05)":"rgba(74,124,89,.05)",borderRadius:6,borderLeft:`2px solid ${r.auto?"rgba(59,130,246,.3)":"rgba(74,124,89,.3)"}`}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:r.body||r.notes?4:0}}>
-                        <span style={{fontSize:9,fontWeight:700,color:r.auto?"#1d4ed8":"#2d6a3f"}}>{r.auto?"● Auto-received":"✓ Logged"} · {r.date}</span>
+                        <span style={{fontSize:9,fontWeight:700,color:r.auto?"#1d4ed8":"#2d6a3f",display:"inline-flex",alignItems:"center",gap:3}}>{r.auto?<>{"\u25CF"}Auto-received</>:<><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Logged</>} · {r.date}</span>
                         {r.from&&<span style={{fontSize:9,color:"#7a7067"}}>{r.from.replace(/<[^>]+>/g,"").trim()}</span>}
                       </div>
                       {(r.body||r.notes)&&<div style={{fontSize:11,color:"#3d3529",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{(r.body||r.notes).slice(0,400)}{(r.body||r.notes).length>400?"…":""}</div>}
@@ -5556,7 +5556,7 @@ ${providerName||"(not specified)"}${providerAddress?"<br/>"+providerAddress:""}$
         <div className="tp-card" style={{marginTop:10,border:"1px solid rgba(74,124,89,.2)",background:"rgba(74,124,89,.02)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
             <h3 style={{margin:0,color:"#4a7c59"}}>Move-In Charges</h3>
-            <span style={{fontSize:11,fontWeight:700,color:remaining>0?"#c45c4a":"#4a7c59"}}>{remaining>0?`${fmtS(remaining)} remaining`:"✓ Fully paid"}</span>
+            <span style={{fontSize:11,fontWeight:700,color:remaining>0?"#c45c4a":"#4a7c59",display:"inline-flex",alignItems:"center",gap:4}}>{remaining>0?`${fmtS(remaining)} remaining`:<><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Fully paid</>}</span>
           </div>
           {appCharges.map(c=>{
             const st=chargeStatus(c);const paid=c.amountPaid;const rem=c.amount-paid;
@@ -5702,7 +5702,7 @@ ${providerName||"(not specified)"}${providerAddress?"<br/>"+providerAddress:""}$
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <p style={{fontSize:11,color:"#6b5e52",margin:0}}>Review the draft below, edit if needed, then click Send.</p>
         <button onClick={()=>{setModal(null);goTab("pm-settings");setExpanded(p=>({...p,emailTemplatesOpen:true,emailTemplatesTab:em.type||"refEmployer"}));}} style={{fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(74,124,89,.3)",background:"rgba(74,124,89,.06)",color:"#2d6a3f",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
-          ✏ Draft Email Settings
+          <span style={{display:"inline-flex",alignItems:"center",gap:4}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Draft Email Settings</span>
         </button>
       </div>
       <div style={{padding:"8px 12px",borderRadius:7,background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",fontSize:11,color:"#5c4a3a",marginBottom:16}}>
@@ -5904,7 +5904,7 @@ ${providerName||"(not specified)"}${providerAddress?"<br/>"+providerAddress:""}$
             </div>
             <div style={{width:52,flexShrink:0,textAlign:"right",padding:"0 6px",fontSize:9,color:"#6b5e52",fontWeight:600}}>
               {r.rent?("$"+(r.rent/1000>=1?(r.rent/1000).toFixed(0)+"k":r.rent)):"—"}
-              {gap!==null&&<div style={{fontSize:7,color:gap===0?"#2d6a3f":gap>0?"#9a7422":"#c45c4a",fontWeight:700}}>{gap===0?"✓ fit":gap>0?gap+"d gap":Math.abs(gap)+"d ovlp"}</div>}
+              {gap!==null&&<div style={{fontSize:7,color:gap===0?"#2d6a3f":gap>0?"#9a7422":"#c45c4a",fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}>{gap===0?<><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>fit</>:gap>0?gap+"d gap":Math.abs(gap)+"d ovlp"}</div>}
             </div>
           </div>);
         };
@@ -5969,7 +5969,7 @@ ${providerName||"(not specified)"}${providerAddress?"<br/>"+providerAddress:""}$
                 <div style={{width:14,height:8,borderRadius:2,background:c}}/>{l}
               </div>
             ))}
-            <div style={{fontSize:8,color:"#6b5e52",marginLeft:"auto"}}>✓ fit / Nd gap / Nd ovlp = vacancy gap vs applicant move-in</div>
+            <div style={{fontSize:8,color:"#6b5e52",marginLeft:"auto",display:"inline-flex",alignItems:"center",gap:4}}><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>fit / Nd gap / Nd ovlp = vacancy gap vs applicant move-in</div>
           </div>
         </div>);
       })()}

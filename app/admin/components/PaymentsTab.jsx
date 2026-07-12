@@ -311,7 +311,7 @@ export default function PaymentsTab({
       {depFilters.view&&<div style={{display:"flex",justifyContent:"flex-end"}}>
         <button onClick={()=>setDepFilters(f=>({...f,view:""}))}
           style={{fontSize:10,fontWeight:600,padding:"3px 10px",borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"rgba(0,0,0,.04)",color:"#5c4a3a",cursor:"pointer",fontFamily:"inherit"}}>
-          Show All ✕
+          <span style={{display:"inline-flex",alignItems:"center",gap:4}}>Show All <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
         </button>
       </div>}
     </div>

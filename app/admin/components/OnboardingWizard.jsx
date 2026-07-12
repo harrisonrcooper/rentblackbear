@@ -268,6 +268,43 @@ export default function OnboardingWizard({
 
   const zoom=settings.adminZoom||1;
   const font=settings.adminFont||"inherit";
+
+  // Already-completed state — if the PM finished onboarding previously, show a
+  // completion card with a link back to Dashboard instead of re-running the wizard.
+  if(settings?.onboardingCompletedAt){
+    return(
+    <div style={{maxWidth:640,margin:"48px auto",padding:"0 20px",fontFamily:font}}>
+      <div style={{padding:"40px 32px",background:"#fff",border:"1px solid rgba(0,0,0,.08)",borderRadius:14,textAlign:"center",boxShadow:"0 2px 8px rgba(0,0,0,.04)"}}>
+        <div style={{width:56,height:56,borderRadius:14,background:accBg,display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:20}}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 8px",color:"#1a1714"}}>Onboarding complete</h2>
+        <p style={{fontSize:14,color:"#6b5e52",margin:"0 0 24px",lineHeight:1.5}}>You finished this on {new Date(settings.onboardingCompletedAt).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}. Keep working from the Dashboard.</p>
+        <button onClick={()=>goTab("dashboard")} style={{padding:"11px 22px",borderRadius:10,border:"none",background:_acc,color:_accContrast,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Go to Dashboard</button>
+      </div>
+    </div>);
+  }
+
+  // Zero-state for brand-new PM with no properties — the wizard assumes existing
+  // data, so short-circuit to a "create your first property" card that routes to
+  // the Properties tab.
+  if(propRows.length===0){
+    return(
+    <div style={{maxWidth:640,margin:"48px auto",padding:"0 20px",fontFamily:font}}>
+      <div style={{padding:"40px 32px",background:"#fff",border:"1px solid rgba(0,0,0,.08)",borderRadius:14,textAlign:"center",boxShadow:"0 2px 8px rgba(0,0,0,.04)"}}>
+        <div style={{width:56,height:56,borderRadius:14,background:accBg,display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:20}}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+        </div>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 8px",color:"#1a1714"}}>Let&apos;s add your first property</h2>
+        <p style={{fontSize:14,color:"#6b5e52",margin:"0 0 24px",lineHeight:1.5}}>The onboarding wizard imports existing tenants into Tenantory. Before that, you need at least one property with units and rooms. Add your first property to get started.</p>
+        <button onClick={()=>goTab("properties")} style={{padding:"11px 22px",borderRadius:10,border:"none",background:_acc,color:_accContrast,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          Add First Property
+        </button>
+        <div style={{marginTop:18,fontSize:12,color:"#9a8878"}}>You can return to onboarding once your properties are set up.</div>
+      </div>
+    </div>);
+  }
+
   return(
   <div style={{maxWidth:1100,margin:"0 auto",position:"relative",transform:zoom!==1?`scale(${zoom})`:"none",transformOrigin:"top left",width:zoom!==1?`${100/zoom}%`:"auto",fontFamily:font}}>
     {toast&&<div style={{position:"fixed",top:16,right:16,zIndex:9999,padding:"10px 18px",borderRadius:8,background:_acc,color:_accContrast,fontSize:13,fontWeight:600,boxShadow:"0 4px 12px rgba(0,0,0,.15)",fontFamily:"inherit"}}>{toast}</div>}

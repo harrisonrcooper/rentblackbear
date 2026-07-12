@@ -198,9 +198,12 @@ async function handlePaymentIntentSucceeded(pi) {
     stripe_payment_id: pi.id,
   };
 
+  // Sum the new payment on top of existing amountPaid. The stripe_payment_id
+  // idempotency check above prevents double-apply on webhook retry. Partial
+  // payments accumulate correctly instead of jumping straight to charge.amount.
   const updatedCharge = {
     ...charge,
-    amountPaid: Math.max(Number(charge.amountPaid || 0), Number(charge.amount || amountDollars)),
+    amountPaid: Math.min(Number(charge.amount || 0), Number(charge.amountPaid || 0) + amountDollars),
     payments: [...existingPayments, paymentRecord],
   };
 

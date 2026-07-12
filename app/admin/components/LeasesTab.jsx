@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { supa } from "@/lib/supabase-client";
+import { getDefaultLeaseTemplateId } from "@/lib/leaseTemplate";
 import LeaseModal from "./LeaseModal";
 import TemplateEditor from "./TemplateEditor";
 import LeaseTemplateList from "./LeaseTemplateList";
@@ -39,7 +40,7 @@ export default function LeasesTab({
   const [renewalModal, setRenewalModal] = useState(null);
 
   /* ── Lease Renewal helpers ── */
-  const LEASE_TEMPLATE_ID = "2d9d0941-2802-468a-a6e8-b2cceacf78d1";
+  // Template id resolved at runtime via lib/leaseTemplate.js
 
   const expiringLeases = (leases || []).filter(l => {
     if (l.status !== "executed" || !l.leaseEnd) return false;
@@ -115,7 +116,7 @@ export default function LeasesTab({
     const row = {
       id: newId,
       workspace_id: null,
-      template_id: LEASE_TEMPLATE_ID,
+      template_id: await getDefaultLeaseTemplateId(),
       tenant_id: renewalLease.tenantEmail || null,
       room_id: renewalLease.roomId || null,
       property_id: renewalLease.propertyId || null,
@@ -640,7 +641,7 @@ export default function LeasesTab({
           <div style={{ color: "#6b5e52", marginBottom: 2 }}>Property</div><strong>{modal.lease.property} · {modal.lease.room}</strong>
         </div>
       </div>
-      <div className="tp-card"><h3>📋 Lease Summary</h3>
+      <div className="tp-card"><h3 style={{display:"inline-flex",alignItems:"center",gap:6}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Lease Summary</h3>
         <div className="tp-row"><span className="tp-label">Rent</span><strong>{fmtS(modal.lease.rent || 0)}/mo</strong></div>
         <div className="tp-row"><span className="tp-label">Security Deposit</span><strong>{fmtS(modal.lease.sd || 0)}</strong></div>
         <div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(modal.lease.moveIn)}</strong></div>
@@ -648,9 +649,9 @@ export default function LeasesTab({
         <div className="tp-row"><span className="tp-label">Door Code</span><strong>{modal.lease.doorCode || "—"}</strong></div>
         <div className="tp-row"><span className="tp-label">Parking</span><strong>{modal.lease.parking || "—"}</strong></div>
       </div>
-      <div className="tp-card" style={{ marginTop: 10 }}><h3>✍ Signatures</h3>
-        <div className="tp-row"><span className="tp-label">PM Signed</span><strong style={{ color: "#4a7c59" }}>✓ {modal.lease.landlordSignedAt ? new Date(modal.lease.landlordSignedAt).toLocaleDateString() : "—"}</strong></div>
-        <div className="tp-row"><span className="tp-label">Tenant Signed</span><strong style={{ color: "#4a7c59" }}>✓ {modal.lease.tenantSignedAt ? new Date(modal.lease.tenantSignedAt).toLocaleDateString() : "—"}</strong></div>
+      <div className="tp-card" style={{ marginTop: 10 }}><h3 style={{display:"inline-flex",alignItems:"center",gap:6}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Signatures</h3>
+        <div className="tp-row"><span className="tp-label">PM Signed</span><strong style={{ color: "#4a7c59", display:"inline-flex", alignItems:"center", gap:4 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>{modal.lease.landlordSignedAt ? new Date(modal.lease.landlordSignedAt).toLocaleDateString() : "\u2014"}</strong></div>
+        <div className="tp-row"><span className="tp-label">Tenant Signed</span><strong style={{ color: "#4a7c59", display:"inline-flex", alignItems:"center", gap:4 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>{modal.lease.tenantSignedAt ? new Date(modal.lease.tenantSignedAt).toLocaleDateString() : "\u2014"}</strong></div>
         <div className="tp-row"><span className="tp-label">Executed</span><strong style={{ color: "#4a7c59" }}>{modal.lease.executedAt ? new Date(modal.lease.executedAt).toLocaleDateString() : "—"}</strong></div>
       </div>
       {modal.lease.tenantSignature && <div style={{ marginTop: 10 }}>

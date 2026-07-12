@@ -267,7 +267,7 @@ export default function TenantPortal() {
 
   // ── PORTAL RENDER ──
   return (
-    <div style={{ fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif", minHeight: "100vh", background: dBg, color: dText }}>
+    <div style={{ fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif", minHeight: "100dvh", background: dBg, color: dText }}>
       <style>{globalStyle + `\n@media (max-width: 640px) { .portal-top-nav { display: none !important; } .portal-bot-nav { display: flex !important; } .portal-content { padding-bottom: 80px !important; } }`}</style>
       {/* Header */}
       <div style={{ background: C.bg, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,.2)" }}>

@@ -30,10 +30,12 @@ async function supaQuery(table, query) {
 }
 
 export async function POST(request) {
-  // Clerk admin gate
+  // Clerk admin gate — also capture userId for pm_accounts auto-provisioning.
+  let clerkUserId = null;
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const authResult = await auth();
+    clerkUserId = authResult?.userId || null;
+    if (!clerkUserId) {
       return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
   } catch (e) {
@@ -54,11 +56,49 @@ export async function POST(request) {
 
     const s = await getSettings();
 
-    // Get PM account id
+    // Resolve PM account id. Strategy for brand-new PMs without a pm_accounts
+    // row yet: try caller-provided pmId → lookup by settings.email → lookup by
+    // Clerk user → auto-create the row so portal invites work on day one.
     let pmAccountId = pmId;
-    if (!pmAccountId) {
+    if (!pmAccountId && s.email) {
       const pms = await supaQuery("pm_accounts", `email=eq.${encodeURIComponent(s.email)}&select=id`);
       pmAccountId = pms?.[0]?.id;
+    }
+    if (!pmAccountId && clerkUserId) {
+      const pms = await supaQuery("pm_accounts", `clerk_user_id=eq.${encodeURIComponent(clerkUserId)}&select=id`);
+      pmAccountId = pms?.[0]?.id;
+    }
+    if (!pmAccountId) {
+      // Auto-provision a pm_accounts row. Try with clerk_user_id first; if the
+      // schema doesn't have that column the insert returns an error body we
+      // retry without the column. Surface Supabase's actual error to the caller
+      // so a schema mismatch doesn't look like a generic 500.
+      const tryInsert = async (body) => {
+        const r = await fetch(`${SUPA_URL}/rest/v1/pm_accounts`, {
+          method: "POST",
+          headers: {
+            apikey: SUPA_KEY,
+            Authorization: `Bearer ${SUPA_KEY}`,
+            "Content-Type": "application/json",
+            Prefer: "return=representation",
+          },
+          body: JSON.stringify(body),
+        });
+        if (!r.ok) return { ok: false, err: await r.text().catch(() => "") };
+        const rows = await r.json();
+        return { ok: true, row: rows?.[0] };
+      };
+      const baseBody = { email: s.email || null, name: s.pmName || s.companyName || "Property Manager" };
+      let attempt = await tryInsert({ ...baseBody, clerk_user_id: clerkUserId });
+      if (!attempt.ok && /clerk_user_id|column/i.test(attempt.err)) {
+        console.warn("[portal-invite] pm_accounts has no clerk_user_id column; retrying without it");
+        attempt = await tryInsert(baseBody);
+      }
+      if (!attempt.ok || !attempt.row?.id) {
+        console.error("[portal-invite] pm_accounts auto-provision failed:", attempt.err);
+        return Response.json({ ok: false, error: "Failed to provision PM account: " + (attempt.err || "unknown") }, { status: 500 });
+      }
+      pmAccountId = attempt.row.id;
     }
 
     // Create or find tenant record in relational table
@@ -67,10 +107,20 @@ export async function POST(request) {
       // Already have a tenants table row id
       tenantRecord = { id: tenantId };
     } else {
-      // Check if tenant exists by email
-      const existing = await supaQuery("tenants", `email=eq.${encodeURIComponent(tenantEmail)}&pm_id=eq.${pmAccountId}&select=id`);
+      // Check if tenant exists by email. Query BOTH pm_id=eq.$pmAccountId AND
+      // pm_id=is.null so legacy tenant rows from the pre-multi-tenant era get
+      // matched instead of duplicated. If we find a legacy row we also patch
+      // its pm_id so subsequent lookups go through the fast path.
+      const existing = await supaQuery("tenants", `email=eq.${encodeURIComponent(tenantEmail)}&or=(pm_id.eq.${pmAccountId},pm_id.is.null)&select=id,pm_id`);
       if (existing?.[0]) {
         tenantRecord = existing[0];
+        if (!existing[0].pm_id) {
+          await fetch(`${SUPA_URL}/rest/v1/tenants?id=eq.${existing[0].id}`, {
+            method: "PATCH",
+            headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ pm_id: pmAccountId }),
+          }).catch(() => {});
+        }
       } else {
         // Create tenant record
         const created = await supaInsert("tenants", {
@@ -104,8 +154,10 @@ export async function POST(request) {
     const portalUrl = `${s.siteUrl}/portal?token=${invite.token}`;
     const firstName = tenantName.split(" ")[0];
 
-    // Send invite email
-    await fetch("https://api.resend.com/emails", {
+    // Send invite email — propagate Resend failures so the caller sees a bounced
+    // email and can resend. Token is already issued, so the PM can retry the
+    // send without creating a new invite record.
+    const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -146,6 +198,11 @@ export async function POST(request) {
         `, s),
       }),
     });
+    if (!resendRes.ok) {
+      const resendErr = await resendRes.text().catch(() => "");
+      console.error("[portal-invite] Resend send failed:", resendErr);
+      return Response.json({ ok: false, token: invite.token, portalUrl, error: "Invite created but email failed to send: " + resendErr, retryable: true }, { status: 502 });
+    }
 
     return Response.json({ ok: true, token: invite.token, portalUrl });
   } catch (err) {

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import { resolveTheme } from "@/lib/theme";
 
 const SCHED_E_CATS = [
   { cat: "Advertising", hint: "Listing fees, signage, online ads" },
@@ -21,7 +22,8 @@ const SCHED_E_CATS = [
 
 const PAY_METHODS = ["Zelle","Venmo","Cash","Bank Transfer","CashApp","Stripe/ACH","Check","Credit Card"];
 
-export default function QuickAddExpense({ props, vendors, expenses, onAdd, onCancel, uid, TODAY }) {
+export default function QuickAddExpense({ props, vendors, expenses, onAdd, onCancel, uid, TODAY, settings }) {
+  const theme = resolveTheme(settings);
   const [date, setDate] = useState(TODAY || new Date().toISOString().slice(0,10));
   const [amount, setAmount] = useState("");
   const [propId, setPropId] = useState("");
@@ -73,7 +75,7 @@ export default function QuickAddExpense({ props, vendors, expenses, onAdd, onCan
     <div className="card" style={{ marginBottom: 12 }}>
       <div className="card-bd">
         <h3 style={{ fontSize: 13, fontWeight: 800, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={theme.danger} strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
           Add Expense
         </h3>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10 }}>

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { resolveTheme } from "@/lib/theme";
 
 export default function AccountingTab({
   settings, properties, charges, expenses, setExpenses,
@@ -7,6 +8,7 @@ export default function AccountingTab({
   payments, save, setModal, uid, allRooms, getPropDisplayName,
   SCHED_E_CAT_LABELS,
 }) {
+  const theme = resolveTheme(settings);
   const props = properties || [];
   const TODAY = new Date();
   const fmtS = n => "$" + Number(n).toLocaleString();
@@ -92,7 +94,7 @@ export default function AccountingTab({
               {count?`${label} (${count})`:label} <span style={{fontSize:8,marginLeft:2}}>{isOpen?"▲":"▼"}</span>
             </button>
             {isOpen&&<div className="ms-panel" onClick={e=>e.stopPropagation()}>
-              {options.length===0&&<div style={{padding:"8px 12px",fontSize:10,color:"#7a7067"}}>None available</div>}
+              {options.length===0&&<div style={{padding:"8px 12px",fontSize:10,color:theme.muted}}>None available</div>}
               {options.map(opt=>{
                 const val=typeof opt==="object"?opt.value:opt;
                 const lbl=typeof opt==="object"?opt.label:opt;
@@ -102,7 +104,7 @@ export default function AccountingTab({
                 </label>);
               })}
               {count>0&&<div style={{borderTop:"1px solid rgba(0,0,0,.06)",padding:"6px 12px",marginTop:4}}>
-                <button style={{fontSize:10,color:"#c45c4a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}} onClick={()=>onToggle("__clear__")}>Clear all</button>
+                <button style={{fontSize:10,color:theme.danger,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}} onClick={()=>onToggle("__clear__")}>Clear all</button>
               </div>}
             </div>}
           </div>);
@@ -113,7 +115,7 @@ export default function AccountingTab({
         <div className="sec-hd">
           <div>
             <h2 style={{margin:0}}>Accounting</h2>
-            <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>
+            <div style={{fontSize:11,color:theme.muted,marginTop:2}}>
               {fmtDp(acctFrom)} — {fmtDp(acctTo)}{hasPropFilter?" · "+acctPropIds.length+" propert"+(acctPropIds.length===1?"y":"ies"):""}
             </div>
           </div>
@@ -123,7 +125,7 @@ export default function AccountingTab({
         {/* ── Global filter bar ── */}
         <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"12px 14px",marginBottom:14,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}} onClick={()=>setAcctDrop(null)}>
           <input type="date" value={acctFrom} onChange={e=>setF("from",e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
-          <span style={{fontSize:11,color:"#7a7067",flexShrink:0}}>to</span>
+          <span style={{fontSize:11,color:theme.muted,flexShrink:0}}>to</span>
           <input type="date" value={acctTo} onChange={e=>setF("to",e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
           <div style={{width:1,height:20,background:"rgba(0,0,0,.08)",flexShrink:0}}/>
           <MsDrop id="prop" label="Property" options={props.map(p=>({value:p.id,label:p.name}))} selected={acctPropIds} onToggle={v=>v==="__clear__"?setF("propIds",[]):setF("propIds",toggleArr(acctPropIds,v))}/>
@@ -145,15 +147,15 @@ export default function AccountingTab({
         {/* ── KPI strip ── */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8,marginBottom:16}}>
           {[
-            {label:"Gross Income",value:totalIncome,color:"#4a7c59",sub:filtIncome.length+" payments"},
-            {label:"Total Expenses",value:totalExp,color:"#c45c4a",sub:filtExpenses.length+" line items"},
-            {label:"Net Operating Income",value:totalNOI,color:totalNOI>=0?"#4a7c59":"#c45c4a",sub:totalIncome>0?Math.round(totalNOI/totalIncome*100)+"% margin":"—"},
-            {label:"DSCR",value:dscr!=null?dscr.toFixed(2)+"x":"—",color:dscr==null?"#7a7067":dscr>=1.25?"#4a7c59":dscr>=1.0?"#d4a853":"#c45c4a",sub:dscr==null?"No mortgages":dscr>=1.25?"Strong coverage":dscr>=1.0?"Marginal":"At risk"},
+            {label:"Gross Income",value:totalIncome,color:theme.success,sub:filtIncome.length+" payments"},
+            {label:"Total Expenses",value:totalExp,color:theme.danger,sub:filtExpenses.length+" line items"},
+            {label:"Net Operating Income",value:totalNOI,color:totalNOI>=0?theme.success:theme.danger,sub:totalIncome>0?Math.round(totalNOI/totalIncome*100)+"% margin":"—"},
+            {label:"DSCR",value:dscr!=null?dscr.toFixed(2)+"x":"—",color:dscr==null?theme.muted:dscr>=1.25?theme.success:dscr>=1.0?theme.warn:theme.danger,sub:dscr==null?"No mortgages":dscr>=1.25?"Strong coverage":dscr>=1.0?"Marginal":"At risk"},
           ].map(({label,value,color,sub})=>(
             <div key={label} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid rgba(0,0,0,.06)"}}>
-              <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>{label}</div>
+              <div style={{fontSize:9,fontWeight:700,color:theme.muted,textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>{label}</div>
               <div style={{fontSize:22,fontWeight:800,color,lineHeight:1}}>{typeof value==="number"?fmtS(value):value}</div>
-              <div style={{fontSize:10,color:"#7a7067",marginTop:4}}>{sub}</div>
+              <div style={{fontSize:10,color:theme.muted,marginTop:4}}>{sub}</div>
             </div>
           ))}
         </div>
@@ -164,8 +166,8 @@ export default function AccountingTab({
           {[["overview","Overview"],["income","Income"],["expenses","Expenses"],["improvements","Capital Improvements"],["mortgages","Mortgages"],["vendors","Vendors"]].map(([k,l])=>(
             <button key={k} onClick={()=>{setAcctSubTab(k);setF("categories",[]);setF("tenants",[]);setF("vendors",[]);setAcctDrop(null);}}
               onMouseEnter={e=>{if(acctSubTab!==k){e.currentTarget.style.background="rgba(255,255,255,.6)";e.currentTarget.style.color="#3c3228";}}}
-              onMouseLeave={e=>{if(acctSubTab!==k){e.currentTarget.style.background="transparent";e.currentTarget.style.color="#6b5e52";}}}
-              style={{padding:"10px 22px",fontSize:13,fontWeight:acctSubTab===k?700:500,color:acctSubTab===k?"#3c3228":"#6b5e52",background:acctSubTab===k?"#fff":"transparent",border:acctSubTab===k?"1px solid rgba(0,0,0,.08)":"1px solid transparent",borderBottom:acctSubTab===k?"2px solid #fff":"2px solid transparent",borderRadius:"10px 10px 0 0",cursor:"pointer",fontFamily:"inherit",marginBottom:-2,transition:"all .15s",whiteSpace:"nowrap",flexShrink:0,position:"relative",zIndex:acctSubTab===k?3:1}}>
+              onMouseLeave={e=>{if(acctSubTab!==k){e.currentTarget.style.background="transparent";e.currentTarget.style.color=theme.muted;}}}
+              style={{padding:"10px 22px",fontSize:13,fontWeight:acctSubTab===k?700:500,color:acctSubTab===k?"#3c3228":theme.muted,background:acctSubTab===k?"#fff":"transparent",border:acctSubTab===k?"1px solid rgba(0,0,0,.08)":"1px solid transparent",borderBottom:acctSubTab===k?"2px solid #fff":"2px solid transparent",borderRadius:"10px 10px 0 0",cursor:"pointer",fontFamily:"inherit",marginBottom:-2,transition:"all .15s",whiteSpace:"nowrap",flexShrink:0,position:"relative",zIndex:acctSubTab===k?3:1}}>
               {l}
             </button>
           ))}
@@ -177,11 +179,11 @@ export default function AccountingTab({
           return(<>
             {/* Toggle */}
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-              <span style={{fontSize:11,color:"#6b5e52",fontWeight:500}}>View by:</span>
+              <span style={{fontSize:11,color:theme.muted,fontWeight:500}}>View by:</span>
               <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden"}}>
                 {[["property","Property"],["unit","Unit / Room"]].map(([k,l])=>(
                   <button key={k} onClick={()=>setAcctOverviewMode(k)}
-                    style={{padding:"5px 14px",fontSize:11,fontWeight:acctOverviewMode===k?700:500,background:acctOverviewMode===k?"#3c3228":"transparent",color:acctOverviewMode===k?"#fff":"#6b5e52",border:"none",cursor:"pointer",fontFamily:"inherit",borderLeft:k==="unit"?"1px solid rgba(0,0,0,.1)":"none"}}>
+                    style={{padding:"5px 14px",fontSize:11,fontWeight:acctOverviewMode===k?700:500,background:acctOverviewMode===k?"#3c3228":"transparent",color:acctOverviewMode===k?"#fff":theme.muted,border:"none",cursor:"pointer",fontFamily:"inherit",borderLeft:k==="unit"?"1px solid rgba(0,0,0,.1)":"none"}}>
                     {l}
                   </button>
                 ))}
@@ -194,7 +196,7 @@ export default function AccountingTab({
                 <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:11,fontWeight:700,color:"#5c4a3a",background:"#faf9f7"}}>By Property — {acctFrom.slice(0,7)} to {acctTo.slice(0,7)}</div>
                 <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                    {["Property","Gross Income","Expenses","NOI","NOI Margin","Annual Debt Svc","DSCR"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Property"?"left":"right",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>)}
+                    {["Property","Gross Income","Expenses","NOI","NOI Margin","Annual Debt Svc","DSCR"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Property"?"left":"right",fontSize:9,fontWeight:700,color:theme.muted,textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>)}
                   </tr></thead>
                   <tbody>
                     {filtProps.map((pr,i)=>{
@@ -208,23 +210,23 @@ export default function AccountingTab({
                       const prDSCR=debt>0?(noi/debt):null;
                       return(<tr key={pr.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
                         <td style={{padding:"9px 14px",fontWeight:700,fontSize:12}}>{getPropDisplayName(pr)}</td>
-                        <td style={{padding:"9px 14px",textAlign:"right",color:"#4a7c59",fontWeight:700}}>{fmtS(inc)}</td>
-                        <td style={{padding:"9px 14px",textAlign:"right",color:"#c45c4a",fontWeight:700}}>{fmtS(exp)}</td>
-                        <td style={{padding:"9px 14px",textAlign:"right",fontWeight:800,color:noi>=0?"#4a7c59":"#c45c4a"}}>{fmtS(noi)}</td>
-                        <td style={{padding:"9px 14px",textAlign:"right",color:margin===null?"#999":margin>=50?"#4a7c59":margin>=25?"#d4a853":"#c45c4a",fontWeight:600}}>{margin!==null?margin+"%":"—"}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",color:theme.success,fontWeight:700}}>{fmtS(inc)}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",color:theme.danger,fontWeight:700}}>{fmtS(exp)}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",fontWeight:800,color:noi>=0?theme.success:theme.danger}}>{fmtS(noi)}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",color:margin===null?"#999":margin>=50?theme.success:margin>=25?theme.warn:theme.danger,fontWeight:600}}>{margin!==null?margin+"%":"—"}</td>
                         <td style={{padding:"9px 14px",textAlign:"right",color:"#5c4a3a"}}>{debt>0?fmtS(debt):"—"}</td>
-                        <td style={{padding:"9px 14px",textAlign:"right",fontWeight:800,color:prDSCR===null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"}}>{prDSCR!==null?prDSCR.toFixed(2)+"x":"—"}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",fontWeight:800,color:prDSCR===null?"#999":prDSCR>=1.25?theme.success:prDSCR>=1.0?theme.warn:theme.danger}}>{prDSCR!==null?prDSCR.toFixed(2)+"x":"—"}</td>
                       </tr>);
                     })}
                   </tbody>
                   <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
                     <td style={{padding:"10px 14px",fontWeight:800}}>Portfolio Total</td>
-                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(totalIncome)}</td>
-                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(totalExp)}</td>
-                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:totalNOI>=0?"#4a7c59":"#c45c4a",fontSize:13}}>{fmtS(totalNOI)}</td>
-                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700,color:"#6b5e52"}}>{totalIncome>0?Math.round(totalNOI/totalIncome*100)+"%":"—"}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:theme.success}}>{fmtS(totalIncome)}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:theme.danger}}>{fmtS(totalExp)}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:totalNOI>=0?theme.success:theme.danger,fontSize:13}}>{fmtS(totalNOI)}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700,color:theme.muted}}>{totalIncome>0?Math.round(totalNOI/totalIncome*100)+"%":"—"}</td>
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700}}>{annualDebt>0?fmtS(annualDebt):"—"}</td>
-                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:dscr===null?"#999":dscr>=1.25?"#4a7c59":dscr>=1.0?"#d4a853":"#c45c4a"}}>{dscr!==null?dscr.toFixed(2)+"x":"—"}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:dscr===null?"#999":dscr>=1.25?theme.success:dscr>=1.0?theme.warn:theme.danger}}>{dscr!==null?dscr.toFixed(2)+"x":"—"}</td>
                   </tr></tfoot>
                 </table></div>
               </div>
@@ -240,16 +242,16 @@ export default function AccountingTab({
                     <div key={title} style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
                       <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:11,fontWeight:700,color:"#5c4a3a",background:"#faf9f7"}}>{title}</div>
                       <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:6}}>
-                        {items.length===0&&<div style={{fontSize:11,color:"#7a7067",padding:"8px 0"}}>None recorded</div>}
+                        {items.length===0&&<div style={{fontSize:11,color:theme.muted,padding:"8px 0"}}>None recorded</div>}
                         {items.map(([cat,amt])=>{
                           const pct=totalExp>0?Math.round(amt/totalExp*100):0;
                           return(<div key={cat}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
                               <span style={{fontSize:10,fontWeight:600,color:"#5c4a3a"}}>{cat}</span>
-                              <span style={{fontSize:11,fontWeight:800,color:"#c45c4a"}}>{fmtS(amt)} <span style={{fontSize:9,color:"#7a7067",fontWeight:400}}>{pct}%</span></span>
+                              <span style={{fontSize:11,fontWeight:800,color:theme.danger}}>{fmtS(amt)} <span style={{fontSize:9,color:theme.muted,fontWeight:400}}>{pct}%</span></span>
                             </div>
                             <div style={{height:3,borderRadius:2,background:"#e5e3df"}}>
-                              <div style={{height:"100%",borderRadius:2,background:"#c45c4a",width:pct+"%"}}/>
+                              <div style={{height:"100%",borderRadius:2,background:theme.danger,width:pct+"%"}}/>
                             </div>
                           </div>);
                         })}
@@ -271,7 +273,7 @@ export default function AccountingTab({
                 <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden",marginBottom:8}}>
                   <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                     <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                      {["Unit / Room","Income","Expenses","NOI"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Unit / Room"?"left":"right",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4}}>{h}</th>)}
+                      {["Unit / Room","Income","Expenses","NOI"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Unit / Room"?"left":"right",fontSize:9,fontWeight:700,color:theme.muted,textTransform:"uppercase",letterSpacing:.4}}>{h}</th>)}
                     </tr></thead>
                     <tbody>
                       {units.map((u,i)=>{
@@ -282,16 +284,16 @@ export default function AccountingTab({
                         const uNOI=uInc-uExp;
                         return(<tr key={u.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
                           <td style={{padding:"8px 14px",fontWeight:600}}>{u.name||("Unit "+(i+1))}</td>
-                          <td style={{padding:"8px 14px",textAlign:"right",color:"#4a7c59"}}>{uInc>0?fmtS(uInc):"—"}</td>
-                          <td style={{padding:"8px 14px",textAlign:"right",color:"#c45c4a"}}>{uExp>0?fmtS(uExp):"—"}</td>
-                          <td style={{padding:"8px 14px",textAlign:"right",fontWeight:700,color:uNOI>=0?"#4a7c59":"#c45c4a"}}>{(uInc>0||uExp>0)?fmtS(uNOI):"—"}</td>
+                          <td style={{padding:"8px 14px",textAlign:"right",color:theme.success}}>{uInc>0?fmtS(uInc):"—"}</td>
+                          <td style={{padding:"8px 14px",textAlign:"right",color:theme.danger}}>{uExp>0?fmtS(uExp):"—"}</td>
+                          <td style={{padding:"8px 14px",textAlign:"right",fontWeight:700,color:uNOI>=0?theme.success:theme.danger}}>{(uInc>0||uExp>0)?fmtS(uNOI):"—"}</td>
                         </tr>);
                       })}
                       {propWideAmt>0&&<tr style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:"rgba(212,168,83,.02)"}}>
                         <td style={{padding:"8px 14px",color:"#9a7422",fontStyle:"italic",fontSize:10}}>Property-wide (no unit assigned)</td>
                         <td style={{padding:"8px 14px",textAlign:"right"}}>—</td>
-                        <td style={{padding:"8px 14px",textAlign:"right",color:"#c45c4a"}}>{fmtS(propWideAmt)}</td>
-                        <td style={{padding:"8px 14px",textAlign:"right",color:"#c45c4a"}}>({fmtS(propWideAmt)})</td>
+                        <td style={{padding:"8px 14px",textAlign:"right",color:theme.danger}}>{fmtS(propWideAmt)}</td>
+                        <td style={{padding:"8px 14px",textAlign:"right",color:theme.danger}}>({fmtS(propWideAmt)})</td>
                       </tr>}
                     </tbody>
                   </table></div>
@@ -321,32 +323,32 @@ export default function AccountingTab({
           const sortIcon=(col)=>acctSort.col===col?(acctSort.dir==="asc"?" ▲":" ▼"):"";
           return(<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div style={{fontSize:11,color:"#6b5e52"}}>{sorted.length} payment{sorted.length!==1?"s":""} · {fmtS(totalIncome)} collected</div>
+              <div style={{fontSize:11,color:theme.muted}}>{sorted.length} payment{sorted.length!==1?"s":""} · {fmtS(totalIncome)} collected</div>
             </div>
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                   {[["date","Date"],["property","Property"],["room","Room"],["tenant","Tenant"],["category","Category"],["method","Method"],["amount","Amount"]].map(([k,h])=>(
-                    <th key={h} className="sort-hdr" onClick={()=>toggleSort(k)} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}{sortIcon(k)}</th>
+                    <th key={h} className="sort-hdr" onClick={()=>toggleSort(k)} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:theme.muted,textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}{sortIcon(k)}</th>
                   ))}
                 </tr></thead>
                 <tbody>
-                  {sorted.length===0&&<tr><td colSpan={7} style={{padding:32,textAlign:"center",color:"#7a7067",fontSize:11}}>No income in this period. Payments are recorded in the Payments tab.</td></tr>}
+                  {sorted.length===0&&<tr><td colSpan={7} style={{padding:32,textAlign:"center",color:theme.muted,fontSize:11}}>No income in this period. Payments are recorded in the Payments tab.</td></tr>}
                   {sorted.map((p,i)=>(
                     <tr key={i} className="acct-row" style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
                       <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace",whiteSpace:"nowrap"}}>{fmtDp(p.date)}</td>
                       <td style={{padding:"8px 14px",fontSize:11}}>{p.propName}</td>
                       <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{p.roomName||"—"}</td>
                       <td style={{padding:"8px 14px",fontWeight:600}}>{p.tenantName}</td>
-                      <td style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(59,130,246,.08)",color:"#3b82f6",fontWeight:700}}>{p.category}</span></td>
+                      <td style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(59,130,246,.08)",color:theme.info,fontWeight:700}}>{p.category}</span></td>
                       <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{p.method||"—"}</td>
-                      <td style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(p.amount)}</td>
+                      <td style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:theme.success}}>{fmtS(p.amount)}</td>
                     </tr>
                   ))}
                 </tbody>
                 {sorted.length>0&&<tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
                   <td colSpan={6} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Collected</td>
-                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#4a7c59",fontSize:14}}>{fmtS(totalIncome)}</td>
+                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:theme.success,fontSize:14}}>{fmtS(totalIncome)}</td>
                 </tr></tfoot>}
               </table></div>
             </div>
@@ -384,7 +386,7 @@ export default function AccountingTab({
           const sortIcon=(col)=>acctSort.col===col?(acctSort.dir==="asc"?" ▲":" ▼"):"";
           return(<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
-              <div style={{fontSize:11,color:"#6b5e52"}}>{sorted.length} expense{sorted.length!==1?"s":""} · {fmtS(totalExp)} total{attachedCount>0?" · "+attachedCount+" receipt"+((attachedCount!==1)?"s":"")+" attached":""}</div>
+              <div style={{fontSize:11,color:theme.muted}}>{sorted.length} expense{sorted.length!==1?"s":""} · {fmtS(totalExp)} total{attachedCount>0?" · "+attachedCount+" receipt"+((attachedCount!==1)?"s":"")+" attached":""}</div>
               <div style={{display:"flex",gap:6}}>
                 {sorted.length>0&&<button className="btn btn-out btn-sm" onClick={()=>setModal({type:"exportExpenses",expenses:sorted,attachedCount})}>↓ Export</button>}
                 <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropIds.length===1?acctPropIds[0]:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}})}>+ Add Expense</button>
@@ -398,13 +400,13 @@ export default function AccountingTab({
                     const hideKey=h.toLowerCase().replace(/\s*\/\s*/g,"_").replace(/\s+/g,"_");
                     return!acctHideCols[hideKey];
                   }).map(([k,h])=>(
-                    <th key={h} className={k?"sort-hdr":""} onClick={k?()=>toggleSort(k):undefined} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap",position:h==="Action"?"relative":"static"}}>
+                    <th key={h} className={k?"sort-hdr":""} onClick={k?()=>toggleSort(k):undefined} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:theme.muted,textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap",position:h==="Action"?"relative":"static"}}>
                       {h==="Action"?<span style={{display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
                         <span>Action</span>
                         <div style={{position:"relative"}}>
-                          <button className="gear-btn" onClick={e=>{e.stopPropagation();setAcctDrop(acctDrop==="colvis"?null:"colvis");}}>⚙</button>
+                          <button className="gear-btn" onClick={e=>{e.stopPropagation();setAcctDrop(acctDrop==="colvis"?null:"colvis");}} aria-label="Column visibility"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
                           {acctDrop==="colvis"&&<div className="gear-panel" onClick={e=>e.stopPropagation()}>
-                            <div style={{padding:"6px 12px",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>Show / hide columns</div>
+                            <div style={{padding:"6px 12px",fontSize:9,fontWeight:700,color:theme.muted,textTransform:"uppercase",letterSpacing:.5}}>Show / hide columns</div>
                             {["Unit / Room","Category","Subcategory","Vendor","Description","Method","Receipt"].map(col=>{
                               const hideKey=col.toLowerCase().replace(/\s*\/\s*/g,"_").replace(/\s+/g,"_");
                               return(<label key={col} className="ms-item">
@@ -419,26 +421,26 @@ export default function AccountingTab({
                   ))}
                 </tr></thead>
                 <tbody>
-                  {sorted.length===0&&<tr><td colSpan={11} style={{padding:32,textAlign:"center",color:"#7a7067",fontSize:11}}>No expenses match your filters. Click "+ Add Expense" to record one.</td></tr>}
+                  {sorted.length===0&&<tr><td colSpan={11} style={{padding:32,textAlign:"center",color:theme.muted,fontSize:11}}>No expenses match your filters. Click "+ Add Expense" to record one.</td></tr>}
                   {sorted.map((e,i)=>{
                     const visibleCells=[];
                     if(!acctHideCols.date)visibleCells.push(<td key="date" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace",whiteSpace:"nowrap"}}>{fmtDp(e.date)}</td>);
                     if(!acctHideCols.property)visibleCells.push(<td key="prop" style={{padding:"8px 14px",fontSize:10}}>
                       {e.propId==="shared"||e._isShared
-                        ?<span style={{display:"inline-flex",alignItems:"center",gap:4}}>{e._isShared?(acctPropIds.length===1?(props.find(p=>p.id===acctPropIds[0])||{}).name:"Filtered"):"All Properties"} <span style={{fontSize:8,padding:"1px 6px",borderRadius:100,background:"rgba(59,130,246,.1)",color:"#3b82f6",fontWeight:700,whiteSpace:"nowrap"}}>SHARED{e._isShared?" · "+fmtS(e._fullAmount)+" total":""}</span></span>
+                        ?<span style={{display:"inline-flex",alignItems:"center",gap:4}}>{e._isShared?(acctPropIds.length===1?(props.find(p=>p.id===acctPropIds[0])||{}).name:"Filtered"):"All Properties"} <span style={{fontSize:8,padding:"1px 6px",borderRadius:100,background:"rgba(59,130,246,.1)",color:theme.info,fontWeight:700,whiteSpace:"nowrap"}}>SHARED{e._isShared?" · "+fmtS(e._fullAmount)+" total":""}</span></span>
                         :(props.find(p=>p.id===e.propId)||{}).name||"—"}
                     </td>);
                     if(!acctHideCols.unit_room)visibleCells.push(<td key="unit" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.unitName?(e.roomName?e.unitName+" / "+e.roomName:e.unitName):e.roomName||"—"}</td>);
                     if(!acctHideCols.category)visibleCells.push(<td key="cat" style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(212,168,83,.1)",color:"#9a7422",fontWeight:700,whiteSpace:"nowrap"}}>{e.category}</span></td>);
-                    if(!acctHideCols.subcategory)visibleCells.push(<td key="subcat" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.subcategory||<span style={{color:"#7a7067"}}>—</span>}</td>);
+                    if(!acctHideCols.subcategory)visibleCells.push(<td key="subcat" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.subcategory||<span style={{color:theme.muted}}>—</span>}</td>);
                     if(!acctHideCols.vendor)visibleCells.push(<td key="vendor" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.vendor||"—"}</td>);
                     if(!acctHideCols.description)visibleCells.push(<td key="desc" style={{padding:"8px 14px",fontWeight:600,maxWidth:180}}>{e.description}</td>);
                     if(!acctHideCols.method)visibleCells.push(<td key="method" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.paymentMethod||"—"}</td>);
-                    if(!acctHideCols.amount)visibleCells.push(<td key="amt" style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a",whiteSpace:"nowrap"}}>{fmtS(e.amount)}</td>);
+                    if(!acctHideCols.amount)visibleCells.push(<td key="amt" style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:theme.danger,whiteSpace:"nowrap"}}>{fmtS(e.amount)}</td>);
                     if(!acctHideCols.receipt)visibleCells.push(<td key="rcpt" style={{padding:"8px 14px"}}>
                       {e.receiptUrl
-                        ?<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:e._receiptPending?"#d4a853":"#4a7c59",fontWeight:700,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:3}}>{e._receiptPending?"📎 Local":"📎 Attached"}</a>
-                        :<label style={{fontSize:10,color:"#d4a853",cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>+ Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
+                        ?<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:e._receiptPending?theme.warn:theme.success,fontWeight:700,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:3}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>{e._receiptPending?"Local":"Attached"}</a>
+                        :<label style={{fontSize:10,color:theme.warn,cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>+ Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
                     </td>);
                     visibleCells.push(<td key="action" style={{padding:"8px 14px",whiteSpace:"nowrap"}}>
                       <div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"flex-end"}}>
@@ -456,7 +458,7 @@ export default function AccountingTab({
                 </tbody>
                 {sorted.length>0&&<tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
                   <td colSpan={8} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Expenses</td>
-                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a",fontSize:14}}>{fmtS(totalExp)}</td>
+                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:theme.danger,fontSize:14}}>{fmtS(totalExp)}</td>
                   <td colSpan={2}/>
                 </tr></tfoot>}
               </table></div>
@@ -471,18 +473,18 @@ export default function AccountingTab({
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div>
                 <div style={{fontSize:12,fontWeight:700,color:"#3c3228"}}>Mortgage Register</div>
-                <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>One record per loan. Feeds DSCR and Schedule E Line 12.</div>
+                <div style={{fontSize:10,color:theme.muted,marginTop:1}}>One record per loan. Feeds DSCR and Schedule E Line 12.</div>
               </div>
               <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addMortgage",form:{propId:acctPropIds.length===1?acctPropIds[0]:(props[0]?.id||""),lender:"",originalBalance:"",currentBalance:"",interestRate:"",monthlyPI:"",startDate:"",maturityDate:"",accountLast4:"",notes:""},errs:{}})}>+ Add Mortgage</button>
             </div>
 
             {filtMg.length===0
-              ?<div style={{textAlign:"center",padding:36,color:"#7a7067",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No mortgages on record. Add one to enable DSCR and Schedule E interest calculations.</div>
+              ?<div style={{textAlign:"center",padding:36,color:theme.muted,background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No mortgages on record. Add one to enable DSCR and Schedule E interest calculations.</div>
               :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
                 <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                     {["Property","Lender","Account","Orig. Balance","Current Balance","Rate","Monthly P&I","Maturity",""].map(h=>(
-                      <th key={h} style={{padding:"9px 14px",textAlign:["Orig. Balance","Current Balance","Rate","Monthly P&I"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
+                      <th key={h} style={{padding:"9px 14px",textAlign:["Orig. Balance","Current Balance","Rate","Monthly P&I"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:theme.muted,textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody>
@@ -495,14 +497,14 @@ export default function AccountingTab({
                         <td style={{padding:"9px 14px"}}>{mg.lender||"—"}</td>
                         <td style={{padding:"9px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace"}}>{mg.accountLast4?"****"+mg.accountLast4:"—"}</td>
                         <td style={{padding:"9px 14px",textAlign:"right",color:"#5c4a3a"}}>{fmtS(mg.originalBalance||0)}</td>
-                        <td style={{padding:"9px 14px",textAlign:"right",fontWeight:700,color:"#c45c4a"}}>{fmtS(mg.currentBalance||0)}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",fontWeight:700,color:theme.danger}}>{fmtS(mg.currentBalance||0)}</td>
                         <td style={{padding:"9px 14px",textAlign:"right"}}>{(mg.interestRate||0)+"%"}</td>
                         <td style={{padding:"9px 14px",textAlign:"right",fontWeight:700}}>{fmtS(mg.monthlyPI||0)}</td>
                         <td style={{padding:"9px 14px",fontSize:10,color:"#5c4a3a"}}>{mg.maturityDate||"—"}</td>
                         <td style={{padding:"9px 14px"}}>
                           <div style={{display:"flex",gap:4}}>
                             <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addMortgage",editId:mg.id,form:{...mg},errs:{}})}>Edit</button>
-                            <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a"}} onClick={()=>setModal({type:"deleteMortgage",mgId:mg.id,lender:mg.lender})}>Delete</button>
+                            <button className="btn btn-out btn-sm" style={{fontSize:9,color:theme.danger}} onClick={()=>setModal({type:"deleteMortgage",mgId:mg.id,lender:mg.lender})}>Delete</button>
                           </div>
                         </td>
                       </tr>);
@@ -510,7 +512,7 @@ export default function AccountingTab({
                   </tbody>
                   <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
                     <td colSpan={4} style={{padding:"10px 14px",fontWeight:800}}>Portfolio Total</td>
-                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(filtMg.reduce((s,mg)=>s+(mg.currentBalance||0),0))}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:theme.danger}}>{fmtS(filtMg.reduce((s,mg)=>s+(mg.currentBalance||0),0))}</td>
                     <td/>
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800}}>{fmtS(filtMg.reduce((s,mg)=>s+(mg.monthlyPI||0),0))}/mo</td>
                     <td colSpan={2}/>
@@ -533,27 +535,27 @@ export default function AccountingTab({
               <div style={{fontSize:12,fontWeight:800,color:"#3c3228",marginBottom:8}}>Expense vs. Capital Improvement — What's the difference?</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:12,fontSize:11}}>
                 <div style={{padding:"10px 12px",borderRadius:8,background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)"}}>
-                  <div style={{fontWeight:700,color:"#4a7c59",marginBottom:4}}>Expense (Schedule E)</div>
+                  <div style={{fontWeight:700,color:theme.success,marginBottom:4}}>Expense (Schedule E)</div>
                   <div style={{color:"#5c4a3a",lineHeight:1.6}}>Deducted in full <strong>this year</strong>. Restores the property to its original condition — fixing what broke, not making it better. Examples: fixing a leaky faucet, repainting worn walls, replacing a broken appliance with a similar one, pest control, cleaning.</div>
                 </div>
                 <div style={{padding:"10px 12px",borderRadius:8,background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)"}}>
-                  <div style={{fontWeight:700,color:"#3b82f6",marginBottom:4}}>Capital Improvement</div>
+                  <div style={{fontWeight:700,color:theme.info,marginBottom:4}}>Capital Improvement</div>
                   <div style={{color:"#5c4a3a",lineHeight:1.6}}>Added to your <strong>cost basis</strong>, depreciated over 27.5 years — NOT deducted this year. Adds value or extends the property's useful life. Examples: new roof, full HVAC replacement, addition, new flooring throughout, new appliances that upgrade the unit.</div>
                 </div>
               </div>
               <div style={{marginTop:10,fontSize:10,color:"#9a7422",padding:"6px 10px",background:"rgba(212,168,83,.06)",borderRadius:6}}>When in doubt, ask your CPA. The IRS scrutinizes this distinction closely. If it improves, extends, or adapts — it's CapEx.</div>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div style={{fontSize:11,color:"#6b5e52"}}>{filtImprove.length} improvement{filtImprove.length!==1?"s":""} · {fmtS(totalImprove)} total cost basis additions</div>
+              <div style={{fontSize:11,color:theme.muted}}>{filtImprove.length} improvement{filtImprove.length!==1?"s":""} · {fmtS(totalImprove)} total cost basis additions</div>
               <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addImprovement",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropIds.length===1?acctPropIds[0]:(props[0]?.id||""),improvementType:"",description:"",contractor:"",amount:"",notes:""},errs:{}})}>+ Add Improvement</button>
             </div>
             {filtImprove.length===0
-              ?<div style={{textAlign:"center",padding:36,color:"#7a7067",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No capital improvements recorded. New roof, HVAC, addition, appliances — log them here for your CPA.</div>
+              ?<div style={{textAlign:"center",padding:36,color:theme.muted,background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No capital improvements recorded. New roof, HVAC, addition, appliances — log them here for your CPA.</div>
               :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
                 <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                     {["Date","Property","Type","Subcategory","Description","Contractor","Receipt","Amount",""].map(h=>(
-                      <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
+                      <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:theme.muted,textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody>
@@ -561,14 +563,14 @@ export default function AccountingTab({
                       <tr key={im.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
                         <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace",whiteSpace:"nowrap"}}>{im.date}</td>
                         <td style={{padding:"8px 14px",fontSize:10}}>{(props.find(p=>p.id===im.propId)||{}).name||"—"}</td>
-                        <td style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(59,130,246,.08)",color:"#3b82f6",fontWeight:700}}>{im.improvementType||"—"}</span></td>
-                        <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{im.subcategory||<span style={{color:"#7a7067"}}>—</span>}</td>
+                        <td style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(59,130,246,.08)",color:theme.info,fontWeight:700}}>{im.improvementType||"—"}</span></td>
+                        <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{im.subcategory||<span style={{color:theme.muted}}>—</span>}</td>
                         <td style={{padding:"8px 14px",fontWeight:600}}>{im.description}</td>
                         <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{im.contractor||"—"}</td>
                         <td style={{padding:"8px 14px"}}>
                           {im.receiptUrl
-                            ?<a href={im.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:"#3b82f6",fontWeight:600,textDecoration:"none"}}>View</a>
-                            :<label style={{fontSize:10,color:"#d4a853",cursor:"pointer",fontWeight:600}}>Upload
+                            ?<a href={im.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:theme.info,fontWeight:600,textDecoration:"none"}}>View</a>
+                            :<label style={{fontSize:10,color:theme.warn,cursor:"pointer",fontWeight:600}}>Upload
                               <input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={async ev=>{
                                 const file=ev.target.files[0];if(!file)return;
                                 const ext=file.name.split(".").pop()||"jpg";
@@ -578,11 +580,11 @@ export default function AccountingTab({
                               }}/>
                             </label>}
                         </td>
-                        <td style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:"#3b82f6",whiteSpace:"nowrap"}}>{fmtS(im.amount)}</td>
+                        <td style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:theme.info,whiteSpace:"nowrap"}}>{fmtS(im.amount)}</td>
                         <td style={{padding:"8px 14px"}}>
                           <div style={{display:"flex",gap:4}}>
                             <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addImprovement",editId:im.id,form:{...im},errs:{}})}>Edit</button>
-                            <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a"}} onClick={()=>setModal({type:"deleteImprovement",imId:im.id,description:im.description})}>Delete</button>
+                            <button className="btn btn-out btn-sm" style={{fontSize:9,color:theme.danger}} onClick={()=>setModal({type:"deleteImprovement",imId:im.id,description:im.description})}>Delete</button>
                           </div>
                         </td>
                       </tr>
@@ -590,7 +592,7 @@ export default function AccountingTab({
                   </tbody>
                   <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
                     <td colSpan={7} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Cost Basis Additions</td>
-                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#3b82f6",fontSize:14}}>{fmtS(totalImprove)}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:theme.info,fontSize:14}}>{fmtS(totalImprove)}</td>
                     <td/>
                   </tr></tfoot>
                 </table></div>
@@ -604,17 +606,17 @@ export default function AccountingTab({
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div>
                 <div style={{fontSize:12,fontWeight:700,color:"#3c3228"}}>Vendor / Payee List</div>
-                <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>Saved vendors auto-populate when adding expenses.</div>
+                <div style={{fontSize:10,color:theme.muted,marginTop:1}}>Saved vendors auto-populate when adding expenses.</div>
               </div>
               <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addVendor",form:{name:"",phone:"",email:"",notes:""},errs:{}})}>+ Add Vendor</button>
             </div>
             {vendors.length===0
-              ?<div style={{textAlign:"center",padding:36,color:"#7a7067",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No vendors saved yet. You can save vendors while adding expenses, or add them here.</div>
+              ?<div style={{textAlign:"center",padding:36,color:theme.muted,background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No vendors saved yet. You can save vendors while adding expenses, or add them here.</div>
               :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                     {["Vendor / Payee","Phone","Email","Notes",""].map(h=>(
-                      <th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4}}>{h}</th>
+                      <th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:9,fontWeight:700,color:theme.muted,textTransform:"uppercase",letterSpacing:.4}}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody>
@@ -623,11 +625,11 @@ export default function AccountingTab({
                         <td style={{padding:"9px 14px",fontWeight:700}}>{v.name}</td>
                         <td style={{padding:"9px 14px",fontSize:10,color:"#5c4a3a"}}>{v.phone||"—"}</td>
                         <td style={{padding:"9px 14px",fontSize:10,color:"#5c4a3a"}}>{v.email||"—"}</td>
-                        <td style={{padding:"9px 14px",fontSize:10,color:"#6b5e52",fontStyle:v.notes?"normal":"italic"}}>{v.notes||"—"}</td>
+                        <td style={{padding:"9px 14px",fontSize:10,color:theme.muted,fontStyle:v.notes?"normal":"italic"}}>{v.notes||"—"}</td>
                         <td style={{padding:"9px 14px"}}>
                           <div style={{display:"flex",gap:4}}>
                             <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addVendor",editId:v.id,form:{...v},errs:{}})}>Edit</button>
-                            <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a"}} onClick={()=>setModal({type:"deleteVendor",vendorId:v.id,name:v.name})}>Delete</button>
+                            <button className="btn btn-out btn-sm" style={{fontSize:9,color:theme.danger}} onClick={()=>setModal({type:"deleteVendor",vendorId:v.id,name:v.name})}>Delete</button>
                           </div>
                         </td>
                       </tr>

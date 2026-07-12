@@ -209,8 +209,8 @@ export default function TransactionLedger({
       </div>
 
       {/* Inline forms */}
-      {quickAdd === "payment" && <QuickAddPayment charges={charges} props={props} onRecord={handleRecordPayment} onCancel={() => setQuickAdd(null)} uid={uid} TODAY={TODAY} />}
-      {quickAdd === "expense" && <QuickAddExpense props={props} vendors={vendors} expenses={expenses} onAdd={handleAddExpense} onCancel={() => setQuickAdd(null)} uid={uid} TODAY={TODAY} />}
+      {quickAdd === "payment" && <QuickAddPayment charges={charges} props={props} onRecord={handleRecordPayment} onCancel={() => setQuickAdd(null)} uid={uid} TODAY={TODAY} settings={settings} />}
+      {quickAdd === "expense" && <QuickAddExpense props={props} vendors={vendors} expenses={expenses} onAdd={handleAddExpense} onCancel={() => setQuickAdd(null)} uid={uid} TODAY={TODAY} settings={settings} />}
       {quickAdd === "charge" && <QuickAddCharge charges={charges} props={props} onAdd={handleAddCharge} onCancel={() => setQuickAdd(null)} uid={uid} TODAY={TODAY} />}
 
       {/* Search */}

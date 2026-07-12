@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import IntegrationsStatusCard from "./IntegrationsStatusCard";
 
 const TIER_LABELS = { starter: "Starter", growth: "Growth", scale: "Scale" };
 const TIER_PRICES = { starter: "$97/mo", growth: "$197/mo", scale: "$397/mo" };
@@ -325,6 +326,7 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
         <div className="sec-hd"><div><h2>PM Settings</h2><p>Company info, lease rules, email templates, and notifications</p></div></div>
         <SubscriptionCard />
         <ConnectCard settings={settings} setSettings={setSettings} save={save} />
+        <div style={{ marginBottom: 16 }}><IntegrationsStatusCard settings={settings} /></div>
         <div className="card"><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:12}}>Company Info</h3>
           <div className="fr"><div className="fld"><label>Company Name</label><input value={settings.companyName} onChange={e=>setSettings({...settings,companyName:e.target.value})}/></div><div className="fld"><label>Legal Entity</label><input value={settings.legalName} onChange={e=>setSettings({...settings,legalName:e.target.value})}/></div></div>
@@ -388,7 +390,7 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
               {/* Reset + Save */}
               <div style={{display:"flex",gap:8}}>
                 <button className="btn btn-out btn-sm" onClick={()=>{setTmplField(curTpl.subjectKey,def[curTpl.subjectKey]);setTmplField(curTpl.bodyKey,def[curTpl.bodyKey]);}}>Reset to Default</button>
-                <button className="btn btn-gold btn-sm" onClick={()=>{}}>{"✓"} Saved Automatically</button>
+                <button className="btn btn-gold btn-sm" onClick={()=>{}} style={{display:"inline-flex",alignItems:"center",gap:6}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Saved Automatically</button>
               </div>
             </div>}
           </div>);
